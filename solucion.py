@@ -83,6 +83,148 @@ def mostrar_tabulate(registros):
         print("No hay registros de licencias medicas.")
 
 
+RUTA_TESSERACT = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
+
+def buscar_patron(texto, patron):
+    import re
+    match = re.search(patron, texto, re.DOTALL | re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    return None
+
+
+def extraer_texto_pypdf2(ruta_pdf):
+    try:
+        from PyPDF2 import PdfReader
+        reader = PdfReader(ruta_pdf)
+        texto = ""
+        for page in reader.pages:
+            texto += page.extract_text() or ""
+        return texto
+    except Exception as e:
+        print(f"Error PyPDF2: {e}")
+        return ""
+
+
+def extraer_texto_ocr(ruta_pdf):
+    try:
+        import pytesseract
+        import fitz
+        from PIL import Image
+        import io
+
+        pytesseract.pytesseract.tesseract_cmd = RUTA_TESSERACT
+
+        doc = fitz.open(ruta_pdf)
+        texto_completo = ""
+
+        for pagina in doc:
+            pix = pagina.get_pixmap(dpi=300)
+            img = Image.open(io.BytesIO(pix.tobytes("png")))
+            texto_completo += pytesseract.image_to_string(img, lang="spa") + "\n"
+
+        doc.close()
+        return texto_completo
+    except Exception as e:
+        print(f"Error OCR: {e}")
+        return ""
+
+
+def parsear_texto_licencia(texto):
+    medico = buscar_patron(texto, r"Profesional\s*:\s*(.+?)(?:\n|Rut|$)")
+    if not medico:
+        medico = buscar_patron(texto, r"APELLIDO PATERNO\s*(.+?)(?:\n|APELLIDO MATERNO)")
+
+    rut_medico = buscar_patron(texto, r"Profesional.*?Rut\s*:\s*(\d[\d\.\-]*\d)")
+    if not rut_medico:
+        rut_medico = buscar_patron(texto, r"RUN\s*[-:]?\s*(\d[\d\.\-]*\d)")
+
+    funcionario = buscar_patron(texto, r"Datos Trabajador.*?Nombre\s*:\s*(.+?)(?:\n|Rut)")
+    if not funcionario:
+        funcionario = buscar_patron(texto, r"DATOS TRABAJADOR.*?NOMBRES?\s*(.+?)(?:\n|RUT)")
+
+    rut_funcionario = buscar_patron(texto, r"Datos Trabajador.*?Rut\s*:\s*(\d[\d\.\-]*\d)")
+
+    tipo_str = buscar_patron(texto, r"Tipo Licencia\s*:\s*(\d)")
+    tipo = int(tipo_str) if tipo_str else None
+
+    dias_str = buscar_patron(texto, r"N[°º]?\s*D[ií]as?\s*:\s*(\d+)")
+    dias = int(dias_str) if dias_str else None
+
+    import re
+    fecha_grupo = re.search(r"Fecha\s*(?:Otorgamiento|Inicio)\s*:\s*(\d{2})[-/](\d{2})[-/](\d{4})", texto, re.IGNORECASE)
+    if fecha_grupo:
+        fecha = f"{fecha_grupo.group(1)}/{fecha_grupo.group(2)}/{fecha_grupo.group(3)}"
+    else:
+        fecha = None
+
+    return medico, rut_medico, funcionario, rut_funcionario, dias, fecha, tipo
+
+
+def detectar_tipo_pdf(ruta_pdf):
+    texto = extraer_texto_pypdf2(ruta_pdf)
+    if texto and len(texto.strip()) > 100:
+        return "texto", texto
+    return "escaneado", extraer_texto_ocr(ruta_pdf)
+
+
+def procesar_pdf(ruta_pdf):
+    if not os.path.exists(ruta_pdf):
+        print(f"Error: No se encontro el archivo {ruta_pdf}")
+        return None
+
+    tipo_pdf, texto = detectar_tipo_pdf(ruta_pdf)
+    print(f"Tipo de PDF detectado: {tipo_pdf}")
+
+    if not texto or len(texto.strip()) < 50:
+        print("Error: No se pudo extraer texto del PDF")
+        return None
+
+    datos = parsear_texto_licencia(texto)
+
+    if not all(datos):
+        print("Error: No se pudieron extraer todos los datos del PDF")
+        print(f"Datos encontrados: medico={datos[0]}, rut_medico={datos[1]}, "
+              f"funcionario={datos[2]}, rut_funcionario={datos[3]}, "
+              f"dias={datos[4]}, fecha={datos[5]}, tipo={datos[6]}")
+        return None
+
+    medico, rut_medico, funcionario, rut_funcionario, dias, fecha, tipo = datos
+
+    estado, motivo = decidir(
+        medico, rut_medico, funcionario, rut_funcionario,
+        dias, fecha, tipo
+    )
+
+    registro = {
+        "medico": medico,
+        "rut_medico": rut_medico,
+        "funcionario": funcionario,
+        "rut_funcionario": rut_funcionario,
+        "dias_reposo": dias,
+        "fecha_emision": fecha,
+        "tipo_licencia": tipo,
+        "estado": estado,
+        "motivo": motivo,
+        "fuente": "PDF",
+    }
+
+    registros = cargar()
+    registros.append(registro)
+    guardar(registros)
+
+    print(f"\nPDF procesado: {os.path.basename(ruta_pdf)}")
+    print(f"Medico: {medico} (RUT: {rut_medico})")
+    print(f"Funcionario: {funcionario} (RUT: {rut_funcionario})")
+    print(f"Dias: {dias} | Fecha: {fecha} | Tipo: {tipo}")
+    print(f"Resultado: {estado}")
+    print(f"Detalle: {motivo}\n")
+
+    mostrar_tabulate(registros)
+    return registro
+
+
 def pedir_datos():
     nombre_medico = input("Nombre del medico: ").strip()
     rut_medico = input("RUT del medico (ej: 12.345.678-9): ").strip()
@@ -127,4 +269,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    if len(sys.argv) > 1:
+        procesar_pdf(sys.argv[1])
+    else:
+        main()

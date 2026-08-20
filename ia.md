@@ -15,6 +15,36 @@ La IA genero:
 5. La vista Django que importa desde solucion.py
 6. Verificacion de compliance: 30/30 puntos posibles
 
+## Funcionalidad OCR agregada (Should)
+Se agrego soporte para leer licencias medicas directamente desde PDF:
+
+### Tipos de PDF soportados
+- **PDF con texto seleccionable**: Usa PyPDF2 para extraer texto directo
+- **PDF escaneado (imagen)**: Usa PyMuPDF + pytesseract (Tesseract OCR) para reconocimiento de caracteres
+
+### Funciones agregadas
+- `extraer_texto_pypdf2(ruta_pdf)`: Lee PDF con texto seleccionable
+- `extraer_texto_ocr(ruta_pdf)`: Convierte PDF a imagen y aplica OCR
+- `detectar_tipo_pdf(ruta_pdf)`: Detecta automaticamente el tipo de PDF
+- `parsear_texto_licencia(texto)`: Extrae los 7 campos con regex
+- `procesar_pdf(ruta_pdf)`: Orquesta todo el proceso
+
+### Uso
+```bash
+# Modo manual (original)
+python solucion.py
+
+# Modo PDF (nuevo)
+python solucion.py "licencia.pdf"
+```
+
+### Dependencias nuevas
+- PyPDF2: Extraccion de texto de PDFs
+- pytesseract: Wrapper de Tesseract OCR
+- Pillow: Manipulacion de imagenes
+- PyMuPDF: Conversion de PDF a imagenes
+- Tesseract-OCR: Motor OCR (instalador Windows)
+
 ## Correcciones realizadas por el estudiante
 - Se ajustaron los maximos de dias por tipo de licencia segun legislacion chilena vigente
 - Se agrego validacion de RUT con formato basico

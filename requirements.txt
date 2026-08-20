@@ -1,3 +1,7 @@
 django>=4.2
 tabulate>=0.9
 python-decouple>=3.8
+PyPDF2>=3.0
+pytesseract>=0.3.10
+Pillow>=10.0
+PyMuPDF>=1.23
