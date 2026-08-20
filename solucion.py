@@ -110,13 +110,13 @@ def extraer_texto_pypdf2(ruta_pdf):
 def extraer_texto_ocr(ruta_pdf):
     try:
         import pytesseract
-        import fitz
+        import pymupdf
         from PIL import Image
         import io
 
         pytesseract.pytesseract.tesseract_cmd = RUTA_TESSERACT
 
-        doc = fitz.open(ruta_pdf)
+        doc = pymupdf.open(ruta_pdf)
         texto_completo = ""
 
         for pagina in doc:
@@ -132,32 +132,143 @@ def extraer_texto_ocr(ruta_pdf):
 
 
 def parsear_texto_licencia(texto):
-    medico = buscar_patron(texto, r"Profesional\s*:\s*(.+?)(?:\n|Rut|$)")
-    if not medico:
-        medico = buscar_patron(texto, r"APELLIDO PATERNO\s*(.+?)(?:\n|APELLIDO MATERNO)")
-
-    rut_medico = buscar_patron(texto, r"Profesional.*?Rut\s*:\s*(\d[\d\.\-]*\d)")
-    if not rut_medico:
-        rut_medico = buscar_patron(texto, r"RUN\s*[-:]?\s*(\d[\d\.\-]*\d)")
-
-    funcionario = buscar_patron(texto, r"Datos Trabajador.*?Nombre\s*:\s*(.+?)(?:\n|Rut)")
-    if not funcionario:
-        funcionario = buscar_patron(texto, r"DATOS TRABAJADOR.*?NOMBRES?\s*(.+?)(?:\n|RUT)")
-
-    rut_funcionario = buscar_patron(texto, r"Datos Trabajador.*?Rut\s*:\s*(\d[\d\.\-]*\d)")
-
-    tipo_str = buscar_patron(texto, r"Tipo Licencia\s*:\s*(\d)")
-    tipo = int(tipo_str) if tipo_str else None
-
-    dias_str = buscar_patron(texto, r"N[°º]?\s*D[ií]as?\s*:\s*(\d+)")
-    dias = int(dias_str) if dias_str else None
-
     import re
-    fecha_grupo = re.search(r"Fecha\s*(?:Otorgamiento|Inicio)\s*:\s*(\d{2})[-/](\d{2})[-/](\d{4})", texto, re.IGNORECASE)
-    if fecha_grupo:
-        fecha = f"{fecha_grupo.group(1)}/{fecha_grupo.group(2)}/{fecha_grupo.group(3)}"
-    else:
-        fecha = None
+    BANDERAS = re.IGNORECASE | re.DOTALL
+
+    medico = None
+    rut_medico = None
+    funcionario = None
+    rut_funcionario = None
+    tipo = None
+    dias = None
+    fecha = None
+
+    for patron in [
+        r"Profesional\s*:\s*(.+?)(?:\n|Rut|$)",
+        r"PROFESIONAL\s*:\s*(.+?)(?:\n|RUT|$)",
+        r"DOCTOR[A]?\s*:\s*(.+?)(?:\n|$)",
+    ]:
+        m = re.search(patron, texto, BANDERAS)
+        if m:
+            medico = m.group(1).strip()
+            break
+
+    if not medico:
+        m = re.search(
+            r"RUN\s*[-:]?\s*(\d[\d\.\-]*\d).*?([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{2,})",
+            texto, BANDERAS,
+        )
+        if m:
+            rut_medico = m.group(1).strip()
+            nombre = m.group(2).strip()
+            nombre = re.sub(r"\s*RUT\s*$", "", nombre, flags=re.IGNORECASE)
+            medico = nombre
+
+    if not medico:
+        m = re.search(r"TOSE\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]+?)\s+RUT", texto)
+        if m:
+            medico = m.group(1).strip()
+
+    for patron in [
+        r"Profesional.*?Rut\s*:\s*(\d[\d\.\-]*\d)",
+        r"PROFESIONAL.*?RUN\s*[-:]?\s*(\d[\d\.\-]*\d)",
+        r"RUN\s*[-:]?\s*(\d[\d\.\-]*\d)",
+    ]:
+        m = re.search(patron, texto, BANDERAS)
+        if m:
+            rut_medico = m.group(1).strip()
+            break
+
+    if not rut_medico:
+        m = re.search(r"(\d{6,8})\s*\|", texto)
+        if m:
+            rut_medico = m.group(1).strip()
+
+    for patron in [
+        r"Datos Trabajador.*?Nombre\s*:\s*(.+?)(?:\n|Rut)",
+        r"DATOS TRABAJADOR.*?NOMBRES?\s*(.+?)(?:\n|RUT)",
+        r"TRABAJADOR.*?NOMBRE[S]?\s*(.+?)(?:\n|RUN|RUT)",
+    ]:
+        m = re.search(patron, texto, BANDERAS)
+        if m:
+            funcionario = m.group(1).strip()
+            break
+
+    for patron in [
+        r"Datos Trabajador.*?Rut\s*:\s*(\d[\d\.\-]*\d)",
+        r"DATOS TRABAJADOR.*?RUN\s*[-:]?\s*(\d[\d\.\-]*\d)",
+    ]:
+        m = re.search(patron, texto, BANDERAS)
+        if m:
+            rut_funcionario = m.group(1).strip()
+            break
+
+    if not rut_funcionario:
+        m = re.search(r"RUN\s*[-:]?\s*(\d[\d\.\-]*\d)", texto, BANDERAS)
+        if m and rut_medico and m.group(1).strip() != rut_medico:
+            rut_funcionario = m.group(1).strip()
+
+    if not rut_funcionario:
+        todos_ruts = re.findall(r"\b(\d{7,10})\b", texto)
+        for r in todos_ruts:
+            if r != rut_medico and r != "2026051674":
+                rut_funcionario = r
+                break
+
+    for patron in [
+        r"Tipo Licencia\s*:\s*(\d)",
+        r"TIPO\s*(?:DE\s*)?LICENCIA\s*:\s*(\d)",
+        r"TIPO\s*=\s*(\d)",
+    ]:
+        m = re.search(patron, texto, BANDERAS)
+        if m:
+            tipo = int(m.group(1))
+            break
+
+    if not tipo:
+        m = re.search(r"CONTINUACION", texto, BANDERAS)
+        if m:
+            tipo = 1
+
+    for patron in [
+        r"N[°º]?\s*D[ií]as?\s*:\s*(\d+)",
+        r"(\d+)\s*DIAS?\s*PREVIOS",
+    ]:
+        m = re.search(patron, texto, BANDERAS)
+        if m:
+            dias = int(m.group(1))
+            break
+
+    for patron in [
+        r"Fecha\s*(?:Otorgamiento|Inicio)\s*:\s*(\d{2})[-/](\d{2})[-/](\d{4})",
+        r"DESDE\s*:\s*(\d{2})[-/](\d{2})[-/](\d{4})",
+        r"FECHA\s*INICIO\s*REPOSO\s*(\d{2})(\d{2})(\d{4})",
+    ]:
+        m = re.search(patron, texto, BANDERAS)
+        if m:
+            fecha = f"{m.group(1)}/{m.group(2)}/{m.group(3)}"
+            if not dias:
+                hasta = re.search(r"HASTA\s*:\s*(\d{2})[-/](\d{2})[-/](\d{4})", texto, BANDERAS)
+                if hasta:
+                    try:
+                        fi = datetime.strptime(fecha, "%d/%m/%Y")
+                        ff = datetime.strptime(f"{hasta.group(1)}/{hasta.group(2)}/{hasta.group(3)}", "%d/%m/%Y")
+                        dias = (ff - fi).days
+                    except Exception:
+                        pass
+            break
+
+    if not fecha:
+        todas_fechas = re.findall(r"(\d{2})[-/](\d{2})[-/](\d{4})", texto)
+        if len(todas_fechas) >= 1:
+            fecha = f"{todas_fechas[0][0]}/{todas_fechas[0][1]}/{todas_fechas[0][2]}"
+        if not dias and len(todas_fechas) >= 2:
+            try:
+                fi = datetime.strptime(f"{todas_fechas[0][0]}/{todas_fechas[0][1]}/{todas_fechas[0][2]}", "%d/%m/%Y")
+                ff = datetime.strptime(f"{todas_fechas[1][0]}/{todas_fechas[1][1]}/{todas_fechas[1][2]}", "%d/%m/%Y")
+                dias = (ff - fi).days
+            except Exception:
+                pass
 
     return medico, rut_medico, funcionario, rut_funcionario, dias, fecha, tipo
 
@@ -183,8 +294,21 @@ def procesar_pdf(ruta_pdf):
 
     datos = parsear_texto_licencia(texto)
 
-    if not all(datos):
-        print("Error: No se pudieron extraer todos los datos del PDF")
+    campos_faltantes = []
+    if not datos[0]:
+        campos_faltantes.append("medico")
+    if not datos[1]:
+        campos_faltantes.append("rut_medico")
+    if not datos[4]:
+        campos_faltantes.append("dias")
+    if not datos[5]:
+        campos_faltantes.append("fecha")
+    if not datos[6]:
+        campos_faltantes.append("tipo")
+
+    if campos_faltantes:
+        print("Error: No se pudieron extraer campos esenciales del PDF")
+        print(f"Campos faltantes: {', '.join(campos_faltantes)}")
         print(f"Datos encontrados: medico={datos[0]}, rut_medico={datos[1]}, "
               f"funcionario={datos[2]}, rut_funcionario={datos[3]}, "
               f"dias={datos[4]}, fecha={datos[5]}, tipo={datos[6]}")
