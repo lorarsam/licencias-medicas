@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resumen - Licencias Medicas</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        h1 { color: #333; }
+        table { border-collapse: collapse; width: 100%; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background: #4CAF50; color: white; }
+        tr:nth-child(even) { background: #f2f2f2; }
+        .aceptada { color: green; font-weight: bold; }
+        .rechazada { color: red; font-weight: bold; }
+        .invalido { color: orange; font-weight: bold; }
+        .vacia { text-align: center; padding: 40px; color: #999; }
+    </style>
+</head>
+<body>
+    <h1>Resumen de Licencias Medicas</h1>
+
+    {% if registros %}
+    <table>
+        <thead>
+            <tr>
+                <th>Medico</th>
+                <th>RUT Medico</th>
+                <th>Funcionario</th>
+                <th>RUT Funcionario</th>
+                <th>Dias Reposo</th>
+                <th>Fecha Emision</th>
+                <th>Tipo</th>
+                <th>Estado</th>
+                <th>Motivo</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reg in registros %}
+            <tr>
+                <td>{{ reg.medico }}</td>
+                <td>{{ reg.rut_medico }}</td>
+                <td>{{ reg.funcionario }}</td>
+                <td>{{ reg.rut_funcionario }}</td>
+                <td>{{ reg.dias_reposo }}</td>
+                <td>{{ reg.fecha_emision }}</td>
+                <td>{{ reg.tipo_licencia }} - {{ reg.tipo_nombre }}</td>
+                <td class="{% if reg.estado == 'Aceptada' %}aceptada{% elif 'Rechazo' in reg.estado %}rechazada{% else %}invalido{% endif %}">
+                    {{ reg.estado }}
+                </td>
+                <td>{{ reg.motivo }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="vacia">
+        <h2>No hay licencias medicas registradas</h2>
+        <p>Ejecute <code>python solucion.py</code> para agregar registros.</p>
+    </div>
+    {% endif %}
+</body>
+</html>
