@@ -1,9 +1,52 @@
 import json
-import os
-from datetime import datetime, date
+from datetime import date, datetime
+from pathlib import Path
+
 from tabulate import tabulate
 
-ARCHIVO_JSON = "datos.json"
+
+BASE_DIR = Path(__file__).resolve().parent
+NOMBRE_ARCHIVO_JSON = "datos.json"
+ARCHIVO_JSON = BASE_DIR / NOMBRE_ARCHIVO_JSON
+FORMATO_FECHA = "%d/%m/%Y"
+CODIFICACION = "utf-8"
+FORMATO_TABLA = "grid"
+
+ESTADO_INVALIDO = "Dato invalido"
+ESTADO_RECHAZO_FECHA = "Rechazo - fecha invalida"
+ESTADO_RECHAZO_DIAS = "Rechazo - dias excedidos"
+ESTADO_ACEPTADA = "Aceptada"
+
+CLASES_ESTADO = {
+    ESTADO_ACEPTADA: "aceptada",
+    ESTADO_RECHAZO_FECHA: "rechazada",
+    ESTADO_RECHAZO_DIAS: "rechazada",
+    ESTADO_INVALIDO: "invalido",
+}
+CLASE_ESTADO_DESCONOCIDO = "invalido"
+
+MENSAJE_NOMBRES_INVALIDOS = "Nombre del medico o funcionario vacio"
+MENSAJE_RUT_INVALIDO = "RUT del medico o funcionario invalido"
+MENSAJE_FECHA_INVALIDA = "Formato de fecha invalido (use DD/MM/AAAA)"
+MENSAJE_DIAS_INVALIDOS = "dias de reposo invalidos"
+MENSAJE_TIPO_INVALIDO = "Tipo de licencia fuera de rango (1-7)"
+MENSAJE_FECHA_FUTURA = "La fecha de emision es futura"
+MENSAJE_ACEPTADA = "Licencia registrada correctamente"
+MENSAJE_ENTEROS = "Dias de reposo y tipo de licencia deben ser numeros enteros"
+MENSAJE_CANCELADO = "Ejecucion cancelada por el usuario"
+MENSAJE_SIN_REGISTROS = "No hay registros de licencias medicas."
+MENSAJE_REGISTRO_GUARDADO = f"Registro guardado en {NOMBRE_ARCHIVO_JSON}"
+NOMBRE_TIPO_DESCONOCIDO = "Desconocido"
+
+PROMPTS = {
+    "nombre_medico": "Nombre del medico: ",
+    "rut_medico": "RUT del medico (ej: 12.345.678-5): ",
+    "nombre_funcionario": "Nombre del funcionario: ",
+    "rut_funcionario": "RUT del funcionario (ej: 12.345.678-5): ",
+    "dias_reposo": "Dias de reposo: ",
+    "fecha_emision": "Fecha de emision (DD/MM/AAAA): ",
+    "tipo_licencia": "Tipo de licencia (1-7): ",
+}
 
 TIPOS_LICENCIA = {
     1: {"nombre": "Enfermedad o accidente comun", "max_dias": 30},
@@ -15,31 +58,65 @@ TIPOS_LICENCIA = {
     7: {"nombre": "Patologias del embarazo", "max_dias": 84},
 }
 
-FORMATO_FECHA = "%d/%m/%Y"
+FACTORES_RUT = (2, 3, 4, 5, 6, 7)
+MODULO_RUT = 11
+RESULTADO_DV_K = 10
+RESULTADO_DV_CERO = 11
+DIGITO_RUT_K = "K"
+DIGITO_RUT_CERO = "0"
 
 
 def cargar():
-    if os.path.exists(ARCHIVO_JSON):
-        with open(ARCHIVO_JSON, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return []
+    if not ARCHIVO_JSON.exists():
+        return []
+
+    try:
+        with ARCHIVO_JSON.open("r", encoding=CODIFICACION) as archivo:
+            return json.load(archivo)
+    except json.JSONDecodeError:
+        return []
 
 
 def guardar(registros):
-    with open(ARCHIVO_JSON, "w", encoding="utf-8") as f:
-        json.dump(registros, f, indent=2, ensure_ascii=False)
+    with ARCHIVO_JSON.open("w", encoding=CODIFICACION) as archivo:
+        json.dump(registros, archivo, indent=2, ensure_ascii=False)
 
 
 def validar_rut(rut):
-    if not rut or not rut.strip():
+    if not isinstance(rut, str):
         return False
-    rut_limpio = rut.replace(".", "").replace("-", "").strip()
+
+    rut_limpio = rut.replace(".", "").replace("-", "").strip().upper()
     if len(rut_limpio) < 2:
         return False
-    return rut_limpio[:-1].isdigit()
+
+    cuerpo = rut_limpio[:-1]
+    digito_ingresado = rut_limpio[-1]
+    if not cuerpo.isdigit() or not (
+        digito_ingresado.isdigit() or digito_ingresado == DIGITO_RUT_K
+    ):
+        return False
+
+    total = 0
+    for indice, digito in enumerate(reversed(cuerpo)):
+        factor = FACTORES_RUT[indice % len(FACTORES_RUT)]
+        total += int(digito) * factor
+
+    resultado = MODULO_RUT - (total % MODULO_RUT)
+    if resultado == RESULTADO_DV_CERO:
+        digito_calculado = DIGITO_RUT_CERO
+    elif resultado == RESULTADO_DV_K:
+        digito_calculado = DIGITO_RUT_K
+    else:
+        digito_calculado = str(resultado)
+
+    return digito_ingresado == digito_calculado
 
 
 def parsear_fecha(fecha_str):
+    if not isinstance(fecha_str, str):
+        return None
+
     try:
         return datetime.strptime(fecha_str, FORMATO_FECHA).date()
     except ValueError:
@@ -54,323 +131,53 @@ def calcular_max_dias(tipo):
     return TIPOS_LICENCIA[tipo]["max_dias"]
 
 
+def obtener_motivo_invalido(nombre_medico, rut_medico, nombre_funcionario,
+                            rut_funcionario, dias_reposo, fecha_emision,
+                            tipo_licencia):
+    if (
+        not isinstance(nombre_medico, str) or not nombre_medico.strip()
+        or not isinstance(nombre_funcionario, str) or not nombre_funcionario.strip()
+    ):
+        return MENSAJE_NOMBRES_INVALIDOS
+    elif not validar_rut(rut_medico) or not validar_rut(rut_funcionario):
+        return MENSAJE_RUT_INVALIDO
+    elif not isinstance(dias_reposo, int) or dias_reposo <= 0:
+        return MENSAJE_DIAS_INVALIDOS
+    elif not validar_tipo_licencia(tipo_licencia):
+        return MENSAJE_TIPO_INVALIDO
+    elif fecha_emision is None:
+        return MENSAJE_FECHA_INVALIDA
+    else:
+        return None
+
+
 def decidir(nombre_medico, rut_medico, nombre_funcionario, rut_funcionario,
             dias_reposo, fecha_emision_str, tipo_licencia):
-    if not validar_tipo_licencia(tipo_licencia) or dias_reposo <= 0:
-        return "Dato invalido", "Tipo de licencia fuera de rango (1-7) o dias de reposo invalidos"
-
     fecha_emision = parsear_fecha(fecha_emision_str)
-    if fecha_emision is None:
-        return "Dato invalido", "Formato de fecha invalido (use DD/MM/AAAA)"
-
-    if not validar_rut(rut_medico) or not validar_rut(rut_funcionario):
-        return "Dato invalido", "RUT del medico o funcionario con formato invalido"
-
-    if fecha_emision > date.today():
-        return "Rechazo - fecha invalida", "La fecha de emision es futura, no puede registrarse"
-
-    max_dias = calcular_max_dias(tipo_licencia)
-    if dias_reposo > max_dias:
-        return "Rechazo - dias excedidos", f"Maximo {max_dias} dias para tipo {tipo_licencia}, se ingresaron {dias_reposo}"
-
-    return "Aceptada", "Licencia registrada correctamente"
-
-
-def mostrar_tabulate(registros):
-    if registros:
-        print(tabulate(registros, headers="keys", tablefmt="grid"))
-    else:
-        print("No hay registros de licencias medicas.")
-
-
-RUTA_TESSERACT = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-
-
-def buscar_patron(texto, patron):
-    import re
-    match = re.search(patron, texto, re.DOTALL | re.IGNORECASE)
-    if match:
-        return match.group(1).strip()
-    return None
-
-
-def extraer_texto_pypdf2(ruta_pdf):
-    try:
-        from PyPDF2 import PdfReader
-        reader = PdfReader(ruta_pdf)
-        texto = ""
-        for page in reader.pages:
-            texto += page.extract_text() or ""
-        return texto
-    except Exception as e:
-        print(f"Error PyPDF2: {e}")
-        return ""
-
-
-def extraer_texto_ocr(ruta_pdf):
-    try:
-        import pytesseract
-        import pymupdf
-        from PIL import Image
-        import io
-
-        pytesseract.pytesseract.tesseract_cmd = RUTA_TESSERACT
-
-        doc = pymupdf.open(ruta_pdf)
-        texto_completo = ""
-
-        for pagina in doc:
-            pix = pagina.get_pixmap(dpi=300)
-            img = Image.open(io.BytesIO(pix.tobytes("png")))
-            texto_completo += pytesseract.image_to_string(img, lang="spa") + "\n"
-
-        doc.close()
-        return texto_completo
-    except Exception as e:
-        print(f"Error OCR: {e}")
-        return ""
-
-
-def parsear_texto_licencia(texto):
-    import re
-    BANDERAS = re.IGNORECASE | re.DOTALL
-
-    medico = None
-    rut_medico = None
-    funcionario = None
-    rut_funcionario = None
-    tipo = None
-    dias = None
-    fecha = None
-
-    for patron in [
-        r"Profesional\s*:\s*(.+?)(?:\n|Rut|$)",
-        r"PROFESIONAL\s*:\s*(.+?)(?:\n|RUT|$)",
-        r"DOCTOR[A]?\s*:\s*(.+?)(?:\n|$)",
-    ]:
-        m = re.search(patron, texto, BANDERAS)
-        if m:
-            medico = m.group(1).strip()
-            break
-
-    if not medico:
-        m = re.search(
-            r"RUN\s*[-:]?\s*(\d[\d\.\-]*\d).*?([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{2,})",
-            texto, BANDERAS,
-        )
-        if m:
-            rut_medico = m.group(1).strip()
-            nombre = m.group(2).strip()
-            nombre = re.sub(r"\s*RUT\s*$", "", nombre, flags=re.IGNORECASE)
-            medico = nombre
-
-    if not medico:
-        m = re.search(r"TOSE\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]+?)\s+RUT", texto)
-        if m:
-            medico = m.group(1).strip()
-
-    for patron in [
-        r"Profesional.*?Rut\s*:\s*(\d[\d\.\-]*\d)",
-        r"PROFESIONAL.*?RUN\s*[-:]?\s*(\d[\d\.\-]*\d)",
-        r"RUN\s*[-:]?\s*(\d[\d\.\-]*\d)",
-    ]:
-        m = re.search(patron, texto, BANDERAS)
-        if m:
-            rut_medico = m.group(1).strip()
-            break
-
-    if not rut_medico:
-        m = re.search(r"(\d{6,8})\s*\|", texto)
-        if m:
-            rut_medico = m.group(1).strip()
-
-    for patron in [
-        r"Datos Trabajador.*?Nombre\s*:\s*(.+?)(?:\n|Rut)",
-        r"DATOS TRABAJADOR.*?NOMBRES?\s*(.+?)(?:\n|RUT)",
-        r"TRABAJADOR.*?NOMBRE[S]?\s*(.+?)(?:\n|RUN|RUT)",
-    ]:
-        m = re.search(patron, texto, BANDERAS)
-        if m:
-            funcionario = m.group(1).strip()
-            break
-
-    for patron in [
-        r"Datos Trabajador.*?Rut\s*:\s*(\d[\d\.\-]*\d)",
-        r"DATOS TRABAJADOR.*?RUN\s*[-:]?\s*(\d[\d\.\-]*\d)",
-    ]:
-        m = re.search(patron, texto, BANDERAS)
-        if m:
-            rut_funcionario = m.group(1).strip()
-            break
-
-    if not rut_funcionario:
-        m = re.search(r"RUN\s*[-:]?\s*(\d[\d\.\-]*\d)", texto, BANDERAS)
-        if m and rut_medico and m.group(1).strip() != rut_medico:
-            rut_funcionario = m.group(1).strip()
-
-    if not rut_funcionario:
-        todos_ruts = re.findall(r"\b(\d{7,10})\b", texto)
-        for r in todos_ruts:
-            if r != rut_medico and r != "2026051674":
-                rut_funcionario = r
-                break
-
-    for patron in [
-        r"Tipo Licencia\s*:\s*(\d)",
-        r"TIPO\s*(?:DE\s*)?LICENCIA\s*:\s*(\d)",
-        r"TIPO\s*=\s*(\d)",
-    ]:
-        m = re.search(patron, texto, BANDERAS)
-        if m:
-            tipo = int(m.group(1))
-            break
-
-    if not tipo:
-        m = re.search(r"CONTINUACION", texto, BANDERAS)
-        if m:
-            tipo = 1
-
-    for patron in [
-        r"N[°º]?\s*D[ií]as?\s*:\s*(\d+)",
-        r"(\d+)\s*DIAS?\s*PREVIOS",
-    ]:
-        m = re.search(patron, texto, BANDERAS)
-        if m:
-            dias = int(m.group(1))
-            break
-
-    for patron in [
-        r"Fecha\s*(?:Otorgamiento|Inicio)\s*:\s*(\d{2})[-/](\d{2})[-/](\d{4})",
-        r"DESDE\s*:\s*(\d{2})[-/](\d{2})[-/](\d{4})",
-        r"FECHA\s*INICIO\s*REPOSO\s*(\d{2})(\d{2})(\d{4})",
-    ]:
-        m = re.search(patron, texto, BANDERAS)
-        if m:
-            fecha = f"{m.group(1)}/{m.group(2)}/{m.group(3)}"
-            if not dias:
-                hasta = re.search(r"HASTA\s*:\s*(\d{2})[-/](\d{2})[-/](\d{4})", texto, BANDERAS)
-                if hasta:
-                    try:
-                        fi = datetime.strptime(fecha, "%d/%m/%Y")
-                        ff = datetime.strptime(f"{hasta.group(1)}/{hasta.group(2)}/{hasta.group(3)}", "%d/%m/%Y")
-                        dias = (ff - fi).days
-                    except Exception:
-                        pass
-            break
-
-    if not fecha:
-        todas_fechas = re.findall(r"(\d{2})[-/](\d{2})[-/](\d{4})", texto)
-        if len(todas_fechas) >= 1:
-            fecha = f"{todas_fechas[0][0]}/{todas_fechas[0][1]}/{todas_fechas[0][2]}"
-        if not dias and len(todas_fechas) >= 2:
-            try:
-                fi = datetime.strptime(f"{todas_fechas[0][0]}/{todas_fechas[0][1]}/{todas_fechas[0][2]}", "%d/%m/%Y")
-                ff = datetime.strptime(f"{todas_fechas[1][0]}/{todas_fechas[1][1]}/{todas_fechas[1][2]}", "%d/%m/%Y")
-                dias = (ff - fi).days
-            except Exception:
-                pass
-
-    return medico, rut_medico, funcionario, rut_funcionario, dias, fecha, tipo
-
-
-def detectar_tipo_pdf(ruta_pdf):
-    texto = extraer_texto_pypdf2(ruta_pdf)
-    if texto and len(texto.strip()) > 100:
-        return "texto", texto
-    return "escaneado", extraer_texto_ocr(ruta_pdf)
-
-
-def procesar_pdf(ruta_pdf):
-    if not os.path.exists(ruta_pdf):
-        print(f"Error: No se encontro el archivo {ruta_pdf}")
-        return None
-
-    tipo_pdf, texto = detectar_tipo_pdf(ruta_pdf)
-    print(f"Tipo de PDF detectado: {tipo_pdf}")
-
-    if not texto or len(texto.strip()) < 50:
-        print("Error: No se pudo extraer texto del PDF")
-        return None
-
-    datos = parsear_texto_licencia(texto)
-
-    campos_faltantes = []
-    if not datos[0]:
-        campos_faltantes.append("medico")
-    if not datos[1]:
-        campos_faltantes.append("rut_medico")
-    if not datos[4]:
-        campos_faltantes.append("dias")
-    if not datos[5]:
-        campos_faltantes.append("fecha")
-    if not datos[6]:
-        campos_faltantes.append("tipo")
-
-    if campos_faltantes:
-        print("Error: No se pudieron extraer campos esenciales del PDF")
-        print(f"Campos faltantes: {', '.join(campos_faltantes)}")
-        print(f"Datos encontrados: medico={datos[0]}, rut_medico={datos[1]}, "
-              f"funcionario={datos[2]}, rut_funcionario={datos[3]}, "
-              f"dias={datos[4]}, fecha={datos[5]}, tipo={datos[6]}")
-        return None
-
-    medico, rut_medico, funcionario, rut_funcionario, dias, fecha, tipo = datos
-
-    estado, motivo = decidir(
-        medico, rut_medico, funcionario, rut_funcionario,
-        dias, fecha, tipo
+    motivo_invalido = obtener_motivo_invalido(
+        nombre_medico, rut_medico, nombre_funcionario, rut_funcionario,
+        dias_reposo, fecha_emision, tipo_licencia,
     )
 
-    registro = {
-        "medico": medico,
-        "rut_medico": rut_medico,
-        "funcionario": funcionario,
-        "rut_funcionario": rut_funcionario,
-        "dias_reposo": dias,
-        "fecha_emision": fecha,
-        "tipo_licencia": tipo,
-        "estado": estado,
-        "motivo": motivo,
-        "fuente": "PDF",
-    }
-
-    registros = cargar()
-    registros.append(registro)
-    guardar(registros)
-
-    print(f"\nPDF procesado: {os.path.basename(ruta_pdf)}")
-    print(f"Medico: {medico} (RUT: {rut_medico})")
-    print(f"Funcionario: {funcionario} (RUT: {rut_funcionario})")
-    print(f"Dias: {dias} | Fecha: {fecha} | Tipo: {tipo}")
-    print(f"Resultado: {estado}")
-    print(f"Detalle: {motivo}\n")
-
-    mostrar_tabulate(registros)
-    return registro
+    if motivo_invalido:
+        return ESTADO_INVALIDO, motivo_invalido
+    elif fecha_emision > date.today():
+        return ESTADO_RECHAZO_FECHA, MENSAJE_FECHA_FUTURA
+    elif dias_reposo > calcular_max_dias(tipo_licencia):
+        max_dias = calcular_max_dias(tipo_licencia)
+        motivo = f"Maximo {max_dias} dias para tipo {tipo_licencia}, se ingresaron {dias_reposo}"
+        return ESTADO_RECHAZO_DIAS, motivo
+    else:
+        return ESTADO_ACEPTADA, MENSAJE_ACEPTADA
 
 
-def pedir_datos():
-    nombre_medico = input("Nombre del medico: ").strip()
-    rut_medico = input("RUT del medico (ej: 12.345.678-9): ").strip()
-    nombre_funcionario = input("Nombre del funcionario: ").strip()
-    rut_funcionario = input("RUT del funcionario (ej: 12.345.678-9): ").strip()
-    dias_reposo = int(input("Dias de reposo: "))
-    fecha_emision = input("Fecha de emision (DD/MM/AAAA): ").strip()
-    tipo_licencia = int(input("Tipo de licencia (1-7): "))
-    return nombre_medico, rut_medico, nombre_funcionario, rut_funcionario, dias_reposo, fecha_emision, tipo_licencia
-
-
-def main():
-    registros = cargar()
-
-    nombre_medico, rut_medico, nombre_funcionario, rut_funcionario, dias_reposo, fecha_emision, tipo_licencia = pedir_datos()
-
+def crear_registro(nombre_medico, rut_medico, nombre_funcionario, rut_funcionario,
+                   dias_reposo, fecha_emision, tipo_licencia):
     estado, motivo = decidir(
         nombre_medico, rut_medico, nombre_funcionario, rut_funcionario,
-        dias_reposo, fecha_emision, tipo_licencia
+        dias_reposo, fecha_emision, tipo_licencia,
     )
-
-    registro = {
+    return {
         "medico": nombre_medico,
         "rut_medico": rut_medico,
         "funcionario": nombre_funcionario,
@@ -382,19 +189,49 @@ def main():
         "motivo": motivo,
     }
 
-    print(f"\nResultado: {estado}")
-    print(f"Detalle: {motivo}\n")
 
+def mostrar_tabulate(registros):
+    if registros:
+        print(tabulate(registros, headers="keys", tablefmt=FORMATO_TABLA))
+    else:
+        print(MENSAJE_SIN_REGISTROS)
+
+
+def pedir_datos():
+    nombre_medico = input(PROMPTS["nombre_medico"]).strip()
+    rut_medico = input(PROMPTS["rut_medico"]).strip()
+    nombre_funcionario = input(PROMPTS["nombre_funcionario"]).strip()
+    rut_funcionario = input(PROMPTS["rut_funcionario"]).strip()
+    dias_reposo = int(input(PROMPTS["dias_reposo"]))
+    fecha_emision = input(PROMPTS["fecha_emision"]).strip()
+    tipo_licencia = int(input(PROMPTS["tipo_licencia"]))
+    return (
+        nombre_medico, rut_medico, nombre_funcionario, rut_funcionario,
+        dias_reposo, fecha_emision, tipo_licencia,
+    )
+
+
+def main():
+    try:
+        datos = pedir_datos()
+    except ValueError:
+        print(f"\nResultado: {ESTADO_INVALIDO}")
+        print(f"Detalle: {MENSAJE_ENTEROS}")
+        return
+
+    registro = crear_registro(*datos)
+    registros = cargar()
     registros.append(registro)
     guardar(registros)
-    print("Registro guardado en datos.json\n")
 
+    print(f"\nResultado: {registro['estado']}")
+    print(f"Detalle: {registro['motivo']}\n")
+    print(f"{MENSAJE_REGISTRO_GUARDADO}\n")
     mostrar_tabulate(registros)
 
 
 if __name__ == "__main__":
-    import sys
-    if len(sys.argv) > 1:
-        procesar_pdf(sys.argv[1])
-    else:
+    try:
         main()
+    except (KeyboardInterrupt, EOFError):
+        print(f"\n{MENSAJE_CANCELADO}")

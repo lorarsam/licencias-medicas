@@ -6,7 +6,7 @@
 Las empresas reciben licencias medicas en formato papel y deben validar manualmente si los datos son correctos (tipo, fechas, dias, RUT). Esto genera errores humanos, retraso en la tramitacion y riesgo de aceptar licencias con datos inconsistentes o fraudulentos.
 
 ### Solucion
-Un sistema que permita ingresar los datos de una licencia medic automaticamente segun reglas de negocio chilenas, registre el resultado en un archivo JSON y lo muestre en una tabla y en una pagina web.
+Un sistema que permita ingresar manualmente los datos de una licencia medica, aplicar reglas de validacion, registrar el resultado en un archivo JSON y mostrarlo en consola y en una pagina web.
 
 ### Alcance
 - **Entra**: ingreso manual de 7 datos de la licencia, validacion con 4 resultados, guardado en JSON, tabla con tabulate en consola, vista web con Django.
@@ -16,12 +16,11 @@ Un sistema que permita ingresar los datos de una licencia medic automaticamente 
 
 | Prioridad | Funcion |
 |-----------|---------|
-| **Must** | Ingresar datos de la licencia por input() |
-| **Must** | Validar tipo de licencia (1-7) y dias > 0 |
-| **Must** | Regla de decision con 4 resultados |
+| **Must** | Ingresar y convertir los 7 datos de la licencia por input() |
+| **Must** | Validar los datos y decidir entre 4 resultados con motivos distintos |
 | **Must** | Guardar registro en datos.json |
 | **Must** | Mostrar resumen con tabulate |
-| **Must** | Vista Django que lee datos.json |
+| **Must** | Vista Django que reutiliza la decision y muestra datos.json |
 | **Should** | OCR con pytesseract/Pillow |
 | **Should** | Alerta si fecha no cuadra con dias de reposo |
 | **Could** | Conexion a lista de medicos fraudulentos |
@@ -35,9 +34,9 @@ Un sistema que permita ingresar los datos de una licencia medic automaticamente 
 | Dato | Tipo | Ejemplo |
 |------|------|---------|
 | nombre_medico | str | "Dr. Juan Perez" |
-| rut_medico | str | "12.345.678-9" |
+| rut_medico | str | "12.345.678-5" |
 | nombre_funcionario | str | "Maria Lopez" |
-| rut_funcionario | str | "15.678.901-2" |
+| rut_funcionario | str | "11.111.111-1" |
 | dias_reposo | int | 7 |
 | fecha_emision | str | "15/08/2026" |
 | tipo_licencia | int | 1-7 |
@@ -46,7 +45,7 @@ Un sistema que permita ingresar los datos de una licencia medic automaticamente 
 
 | # | Condicion | Resultado |
 |---|-----------|-----------|
-| 1 | tipo no es 1-7, dias <= 0, formato fecha invalido, o RUT invalido | Dato invalido |
+| 1 | nombre vacio, tipo no es 1-7, dias <= 0, formato fecha invalido, o RUT invalido | Dato invalido |
 | 2 | fecha emision es futura | Rechazo - fecha invalida |
 | 3 | dias superan maximo del tipo de licencia | Rechazo - dias excedidos |
 | 4 | todo valido | Aceptada |

@@ -2,7 +2,6 @@
 __pycache__/
 *.pyc
 *.pyo
-datos.json
 .venv/
 venv/
 *.egg-info/

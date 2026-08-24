@@ -18,7 +18,7 @@
 - [x] Crear spec licencia-medica/spec.md
 
 ## Verification Tasks
-- [ ] Ejecutar python solucion.py y probar los 4 casos
-- [ ] Ejecutar python manage.py runserver y verificar /resumen/
-- [ ] Verificar que datos.json se crea y guarda registros
-- [ ] Verificar que tabulate muestra tabla formateada
+- [x] Ejecutar python solucion.py y probar los 4 casos
+- [x] Ejecutar python manage.py runserver y verificar /resumen/
+- [x] Verificar que datos.json se crea y guarda registros
+- [x] Verificar que tabulate muestra tabla formateada

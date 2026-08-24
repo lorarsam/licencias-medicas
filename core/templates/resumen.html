@@ -45,9 +45,7 @@
                 <td>{{ reg.dias_reposo }}</td>
                 <td>{{ reg.fecha_emision }}</td>
                 <td>{{ reg.tipo_licencia }} - {{ reg.tipo_nombre }}</td>
-                <td class="{% if reg.estado == 'Aceptada' %}aceptada{% elif 'Rechazo' in reg.estado %}rechazada{% else %}invalido{% endif %}">
-                    {{ reg.estado }}
-                </td>
+                <td class="{{ reg.estado_clase }}">{{ reg.estado }}</td>
                 <td>{{ reg.motivo }}</td>
             </tr>
             {% endfor %}

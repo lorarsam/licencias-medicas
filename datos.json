@@ -1,0 +1,57 @@
+[
+  {
+    "medico": "ANA EJEMPLO",
+    "rut_medico": "12.345.678-5",
+    "funcionario": "LUIS PRUEBA",
+    "rut_funcionario": "11.111.111-1",
+    "dias_reposo": 7,
+    "fecha_emision": "01/01/2026",
+    "tipo_licencia": 1,
+    "estado": "Aceptada",
+    "motivo": "Licencia registrada correctamente"
+  },
+  {
+    "medico": "BEATRIZ DEMOSTRACION",
+    "rut_medico": "12.345.678-9",
+    "funcionario": "MARIO EJEMPLO",
+    "rut_funcionario": "11.111.111-1",
+    "dias_reposo": 5,
+    "fecha_emision": "01/01/2026",
+    "tipo_licencia": 1,
+    "estado": "Dato invalido",
+    "motivo": "RUT del medico o funcionario invalido"
+  },
+  {
+    "medico": "CARLA PRUEBA",
+    "rut_medico": "12.345.678-5",
+    "funcionario": "PEDRO DEMOSTRACION",
+    "rut_funcionario": "11.111.111-1",
+    "dias_reposo": 10,
+    "fecha_emision": "31/12/2099",
+    "tipo_licencia": 1,
+    "estado": "Rechazo - fecha invalida",
+    "motivo": "La fecha de emision es futura"
+  },
+  {
+    "medico": "DANIELA EJEMPLO",
+    "rut_medico": "12.345.678-5",
+    "funcionario": "JORGE PRUEBA",
+    "rut_funcionario": "11.111.111-1",
+    "dias_reposo": 31,
+    "fecha_emision": "01/01/2026",
+    "tipo_licencia": 1,
+    "estado": "Rechazo - dias excedidos",
+    "motivo": "Maximo 30 dias para tipo 1, se ingresaron 31"
+  },
+  {
+    "medico": "Leonor Catalina Solis Rojas",
+    "rut_medico": "17.106.757-K",
+    "funcionario": "Georgina San Martin Gonzalez",
+    "rut_funcionario": "10.357.496-K",
+    "dias_reposo": 4,
+    "fecha_emision": "24/08/2026",
+    "tipo_licencia": 2,
+    "estado": "Rechazo - dias excedidos",
+    "motivo": "Maximo 2 dias para tipo 2, se ingresaron 4"
+  }
+]
