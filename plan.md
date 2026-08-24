@@ -50,6 +50,42 @@ Un sistema que permita ingresar manualmente los datos de una licencia medica, ap
 | 3 | dias superan maximo del tipo de licencia | Rechazo - dias excedidos |
 | 4 | todo valido | Aceptada |
 
+### Diagrama de Flujo
+
+```mermaid
+flowchart TD
+    subgraph Consola
+        direction LR
+        A([Inicio]) --> B[Ingresar los 7 datos]
+        B --> C{Dias y tipo son enteros?}
+        C -->|No| D[Mostrar Dato invalido]
+        C -->|Si| E{Resultado de decidir}
+        E -->|Datos incorrectos| F[Dato invalido]
+        E -->|Fecha futura| G[Rechazo por fecha]
+        E -->|Dias excedidos| H[Rechazo por dias]
+        E -->|Todo valido| I[Aceptada]
+        F --> J[Crear registro]
+        G --> J
+        H --> J
+        I --> J
+        J --> K[Guardar en datos.json]
+        K --> L[Mostrar tabla con tabulate]
+        D --> M([Fin])
+        L --> M
+    end
+
+    subgraph Web
+        direction LR
+        N([Acceder a /resumen/]) --> O[Cargar datos.json]
+        O --> P[Reutilizar decidir]
+        P --> Q{Hay registros?}
+        Q -->|Si| R[Mostrar tabla]
+        Q -->|No| S[Mostrar mensaje sin registros]
+    end
+```
+
+Los estados, mensajes, tipos de licencia, dias maximos y formatos usados por este flujo se obtienen de las constantes centralizadas en `solucion.py`.
+
 ### Paquete Externo
 - **tabulate**: mostrar el resumen como tabla en consola (evaluado en 1.1.3)
 
