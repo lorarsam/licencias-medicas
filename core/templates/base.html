@@ -1,0 +1,28 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="{{ ui.idioma }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ ui.titulo_pagina }}{% endblock %}</title>
+    <link rel="stylesheet" href="{% static ruta_estilos %}">
+</head>
+<body>
+    <a class="skip-link" href="#contenido">{{ ui.saltar_contenido }}</a>
+    <header class="topbar">
+        <div class="topbar__inner">
+            <a class="brand" href="{% url nombre_ruta_resumen %}" aria-label="{{ ui.titulo_principal }}">
+                <span class="brand__mark" aria-hidden="true">{{ ui.marca_inicial }}</span>
+                <span>
+                    <strong>{{ ui.marca }}</strong>
+                    <small>{{ ui.area }}</small>
+                </span>
+            </a>
+            <span class="topbar__meta">{{ ui.pie }}</span>
+        </div>
+    </header>
+    <main id="contenido">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

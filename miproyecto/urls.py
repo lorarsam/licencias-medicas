@@ -1,6 +1,7 @@
 from django.urls import path
 from core import views
+from solucion import NOMBRE_RUTA_RESUMEN, RUTA_RESUMEN
 
 urlpatterns = [
-    path("resumen/", views.resumen, name="resumen"),
+    path(RUTA_RESUMEN, views.resumen, name=NOMBRE_RUTA_RESUMEN),
 ]

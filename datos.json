@@ -53,5 +53,38 @@
     "tipo_licencia": 2,
     "estado": "Rechazo - dias excedidos",
     "motivo": "Maximo 2 dias para tipo 2, se ingresaron 4"
+  },
+  {
+    "medico": "Oscar Porras Méndez",
+    "rut_medico": "21233144-2",
+    "funcionario": "Rayén San Martín",
+    "rut_funcionario": "19999855-2",
+    "dias_reposo": 3,
+    "fecha_emision": "24/08/2026",
+    "tipo_licencia": 1,
+    "estado": "Dato invalido",
+    "motivo": "RUT del medico o funcionario invalido"
+  },
+  {
+    "medico": "Oscar Porras Méndez",
+    "rut_medico": "21.233.144-2",
+    "funcionario": "Rayén San Martín",
+    "rut_funcionario": "19.999.855-2",
+    "dias_reposo": 3,
+    "fecha_emision": "24/08/2026",
+    "tipo_licencia": 1,
+    "estado": "Dato invalido",
+    "motivo": "RUT del medico o funcionario invalido"
+  },
+  {
+    "medico": "Leonor Solis",
+    "rut_medico": "17.106.757-K",
+    "funcionario": "Miguel Rojas",
+    "rut_funcionario": "9.842.509-8",
+    "dias_reposo": 2,
+    "fecha_emision": "24/08/2026",
+    "tipo_licencia": 2,
+    "estado": "Aceptada",
+    "motivo": "Licencia registrada correctamente"
   }
 ]
