@@ -1,10 +1,10 @@
 # Uso de IA en el proyecto
 
 ## Herramienta y finalidad
-Use OpenCode para ordenar el plan y revisar el proyecto contra las instrucciones de la evaluacion ES1. La consulta concreta fue: "Vuelve a verificar que se cumplan los requisitos y soluciona el problema al correr solucion.py".
+Use OpenCode para ordenar el plan y revisar el proyecto contra las instrucciones de la evaluacion ES1. La consulta concreta fue: "Revisa nuevamente las instrucciones y confirmame si falta algo por hacer o si esta todo listo para evaluar".
 
 ## Respuesta recibida
-La herramienta explico que `KeyboardInterrupt` aparecia porque el programa fue detenido mientras `input()` esperaba el nombre del medico. Tambien detecto que la regla no usaba `if/elif/else` y que el OCR estaba programado aunque el plan lo clasificaba como Should y fuera de alcance.
+La herramienta confirmo que Django, JSON y `tabulate` funcionaban, pero detecto tres riesgos: la consulta de IA no estaba analizada en mis palabras, las entradas no numericas no se guardaban y la regla no mostraba el operador `and` mencionado en el checklist.
 
-## Correccion aplicada
-Decidi dejar un MVP estricto. Se retiro OCR, se centralizaron las reglas en constantes, se escribieron los cuatro resultados con `if/elif/else` y se manejo la cancelacion sin mostrar un traceback. Tambien se hizo que la vista Django reutilice `decidir()` en vez de duplicar la regla.
+## Revision personal y correccion
+Al principio no entendi por que usar `or` no bastaba si la decision ya funcionaba. Revise el ejemplo del criterio 1.1.2 y comprendi que debia demostrar una combinacion con `and`; por eso lo use para comprobar que ambos nombres sean validos. Tambien conserve las entradas no numericas como datos invalidos para que pasen por la misma regla, se guarden en JSON y aparezcan en la tabla, sin agregar OCR, base de datos ni otras funciones fuera del MVP.

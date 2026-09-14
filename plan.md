@@ -3,10 +3,10 @@
 ## Apartado de Negocio
 
 ### Problema
-Las empresas reciben licencias medicas en formato papel y deben validar manualmente si los datos son correctos (tipo, fechas, dias, RUT). Esto genera errores humanos, retraso en la tramitacion y riesgo de aceptar licencias con datos inconsistentes o fraudulentos.
+Las empresas reciben licencias medicas en papel y validan manualmente sus datos. Esto afecta al equipo de personas, provoca errores y retrasa la tramitacion de cada licencia.
 
 ### Solucion
-Un sistema que permita ingresar manualmente los datos de una licencia medica, aplicar reglas de validacion, registrar el resultado en un archivo JSON y mostrarlo en consola y en una pagina web.
+El programa ingresa los datos de una licencia y entrega uno de cuatro resultados con su motivo. Luego guarda la decision en JSON y muestra el resumen en consola y en una pantalla Django.
 
 ### Alcance
 - **Entra**: ingreso manual de 7 datos de la licencia, validacion con 4 resultados, guardado en JSON, tabla con tabulate en consola, vista web con Django.
@@ -20,7 +20,7 @@ Un sistema que permita ingresar manualmente los datos de una licencia medica, ap
 | **Must** | Validar los datos y decidir entre 4 resultados con motivos distintos |
 | **Must** | Guardar registro en datos.json |
 | **Must** | Mostrar resumen con tabulate |
-| **Must** | Vista Django que reutiliza la decision y muestra datos.json |
+| **Must** | Vista Django que permite ingresar, reutiliza la decision y muestra datos.json |
 | **Should** | OCR con pytesseract/Pillow |
 | **Should** | Alerta si fecha no cuadra con dias de reposo |
 | **Could** | Conexion a lista de medicos fraudulentos |
@@ -45,50 +45,14 @@ Un sistema que permita ingresar manualmente los datos de una licencia medica, ap
 
 | # | Condicion | Resultado |
 |---|-----------|-----------|
-| 1 | nombre vacio, tipo no es 1-7, dias <= 0, formato fecha invalido, o RUT invalido | Dato invalido |
+| 1 | nombre vacio, numero no entero, tipo no es 1-7, dias <= 0, fecha o RUT invalido | Dato invalido |
 | 2 | fecha emision es futura | Rechazo - fecha invalida |
 | 3 | dias superan maximo del tipo de licencia | Rechazo - dias excedidos |
 | 4 | todo valido | Aceptada |
-
-### Diagrama de Flujo
-
-```mermaid
-flowchart TD
-    subgraph Consola
-        direction LR
-        A([Inicio]) --> B[Ingresar los 7 datos]
-        B --> C{Dias y tipo son enteros?}
-        C -->|No| D[Mostrar Dato invalido]
-        C -->|Si| E{Resultado de decidir}
-        E -->|Datos incorrectos| F[Dato invalido]
-        E -->|Fecha futura| G[Rechazo por fecha]
-        E -->|Dias excedidos| H[Rechazo por dias]
-        E -->|Todo valido| I[Aceptada]
-        F --> J[Crear registro]
-        G --> J
-        H --> J
-        I --> J
-        J --> K[Guardar en datos.json]
-        K --> L[Mostrar tabla con tabulate]
-        D --> M([Fin])
-        L --> M
-    end
-
-    subgraph Web
-        direction LR
-        N([Acceder a /resumen/]) --> O[Cargar datos.json]
-        O --> P[Reutilizar decidir]
-        P --> Q{Hay registros?}
-        Q -->|Si| R[Mostrar tabla]
-        Q -->|No| S[Mostrar mensaje sin registros]
-    end
-```
-
-Los estados, mensajes, tipos de licencia, dias maximos y formatos usados por este flujo se obtienen de las constantes centralizadas en `solucion.py`.
 
 ### Paquete Externo
 - **tabulate**: mostrar el resumen como tabla en consola (evaluado en 1.1.3)
 
 ### Pantalla Web
 - **Direccion**: `http://127.0.0.1:8000/resumen/`
-- **Muestra**: tabla con todos los registros de licencias procesadas
+- **Muestra**: formulario para ingresar una licencia y tabla con todos los registros procesados

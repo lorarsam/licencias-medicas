@@ -12,7 +12,9 @@ from solucion import (
     ESTADO_RECHAZO_DIAS,
     ESTADO_RECHAZO_FECHA,
     FORMATO_FECHA,
+    MENSAJE_DIAS_INVALIDOS,
     MENSAJE_ENTERO_INVALIDO,
+    MENSAJE_TIPO_INVALIDO,
     NOMBRE_RUTA_RESUMEN,
     PARAMETRO_REGISTRO_GUARDADO,
     RUTA_ESTILOS,
@@ -20,6 +22,8 @@ from solucion import (
     TIPOS_LICENCIA,
     VALOR_PARAMETRO_ACTIVO,
     crear_registro,
+    main,
+    pedir_datos,
 )
 
 
@@ -32,6 +36,61 @@ DATOS_FORMULARIO_VALIDOS = {
     "fecha_emision": "2026-01-01",
     "tipo_licencia": 1,
 }
+
+
+class SolucionConsolaTests(SimpleTestCase):
+    @patch(
+        "builtins.input",
+        side_effect=(
+            "Ana Ejemplo",
+            "12.345.678-5",
+            "Luis Prueba",
+            "11.111.111-1",
+            "texto",
+            "01/01/2026",
+            "fuera-de-rango",
+        ),
+    )
+    def test_conserva_conversiones_invalidas_para_evaluarlas(self, input_mock):
+        datos = pedir_datos()
+
+        self.assertEqual(datos[4], "texto")
+        self.assertEqual(datos[6], "fuera-de-rango")
+        self.assertEqual(input_mock.call_count, 7)
+
+    def test_persiste_y_tabula_entradas_no_numericas(self):
+        casos = (
+            (
+                (
+                    "Ana Ejemplo", "12.345.678-5", "Luis Prueba",
+                    "11.111.111-1", "texto", "01/01/2026", 1,
+                ),
+                MENSAJE_DIAS_INVALIDOS,
+            ),
+            (
+                (
+                    "Ana Ejemplo", "12.345.678-5", "Luis Prueba",
+                    "11.111.111-1", 7, "01/01/2026", "texto",
+                ),
+                MENSAJE_TIPO_INVALIDO,
+            ),
+        )
+
+        for datos, motivo_esperado in casos:
+            with self.subTest(motivo=motivo_esperado):
+                with (
+                    patch("solucion.pedir_datos", return_value=datos),
+                    patch("solucion.cargar", return_value=[]),
+                    patch("solucion.guardar") as guardar_mock,
+                    patch("solucion.mostrar_tabulate") as tabulate_mock,
+                    patch("builtins.print"),
+                ):
+                    main()
+
+                registros = guardar_mock.call_args.args[0]
+                self.assertEqual(registros[0]["estado"], ESTADO_INVALIDO)
+                self.assertEqual(registros[0]["motivo"], motivo_esperado)
+                tabulate_mock.assert_called_once_with(registros)
 
 
 class LicenciaMedicaFormTests(SimpleTestCase):

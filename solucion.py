@@ -44,7 +44,6 @@ MENSAJE_DIAS_INVALIDOS = "dias de reposo invalidos"
 MENSAJE_TIPO_INVALIDO = "Tipo de licencia fuera de rango (1-7)"
 MENSAJE_FECHA_FUTURA = "La fecha de emision es futura"
 MENSAJE_ACEPTADA = "Licencia registrada correctamente"
-MENSAJE_ENTEROS = "Dias de reposo y tipo de licencia deben ser numeros enteros"
 MENSAJE_CANCELADO = "Ejecucion cancelada por el usuario"
 MENSAJE_SIN_REGISTROS = "No hay registros de licencias medicas."
 MENSAJE_REGISTRO_GUARDADO = f"Registro guardado en {NOMBRE_ARCHIVO_JSON}"
@@ -248,13 +247,23 @@ def calcular_max_dias(tipo):
     return TIPOS_LICENCIA[tipo]["max_dias"]
 
 
+def convertir_entero(valor):
+    try:
+        return int(valor)
+    except ValueError:
+        return valor
+
+
 def obtener_motivo_invalido(nombre_medico, rut_medico, nombre_funcionario,
                             rut_funcionario, dias_reposo, fecha_emision,
                             tipo_licencia):
-    if (
-        not isinstance(nombre_medico, str) or not nombre_medico.strip()
-        or not isinstance(nombre_funcionario, str) or not nombre_funcionario.strip()
-    ):
+    nombres_validos = (
+        isinstance(nombre_medico, str)
+        and bool(nombre_medico.strip())
+        and isinstance(nombre_funcionario, str)
+        and bool(nombre_funcionario.strip())
+    )
+    if not nombres_validos:
         return MENSAJE_NOMBRES_INVALIDOS
     elif not validar_rut(rut_medico) or not validar_rut(rut_funcionario):
         return MENSAJE_RUT_INVALIDO
@@ -319,9 +328,9 @@ def pedir_datos():
     rut_medico = input(PROMPTS["rut_medico"]).strip()
     nombre_funcionario = input(PROMPTS["nombre_funcionario"]).strip()
     rut_funcionario = input(PROMPTS["rut_funcionario"]).strip()
-    dias_reposo = int(input(PROMPTS["dias_reposo"]))
+    dias_reposo = convertir_entero(input(PROMPTS["dias_reposo"]).strip())
     fecha_emision = input(PROMPTS["fecha_emision"]).strip()
-    tipo_licencia = int(input(PROMPTS["tipo_licencia"]))
+    tipo_licencia = convertir_entero(input(PROMPTS["tipo_licencia"]).strip())
     return (
         nombre_medico, rut_medico, nombre_funcionario, rut_funcionario,
         dias_reposo, fecha_emision, tipo_licencia,
@@ -329,13 +338,7 @@ def pedir_datos():
 
 
 def main():
-    try:
-        datos = pedir_datos()
-    except ValueError:
-        print(f"\nResultado: {ESTADO_INVALIDO}")
-        print(f"Detalle: {MENSAJE_ENTEROS}")
-        return
-
+    datos = pedir_datos()
     registro = crear_registro(*datos)
     registros = cargar()
     registros.append(registro)
