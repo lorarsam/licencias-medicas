@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero" aria-labelledby="titulo-principal">
+    <div class="container hero__content">
+        <p class="eyebrow">{{ ui.area }}</p>
+        <h1 id="titulo-principal">Eliminar licencia medica</h1>
+        <p class="hero__description">La licencia se ocultara del listado mediante borrado logico.</p>
+    </div>
+</section>
+
+<div class="container workspace">
+    <section class="panel" aria-labelledby="titulo-confirmacion">
+        <div class="panel__header">
+            <div>
+                <p class="section-number">01</p>
+                <h2 id="titulo-confirmacion">Confirmar eliminacion</h2>
+                <p>La informacion no se borrara fisicamente de la base de datos.</p>
+            </div>
+        </div>
+        <p>Funcionario: <strong>{{ licencia.funcionario }}</strong></p>
+        <p>Fecha de emision: <strong>{{ licencia.fecha_emision|date:"d/m/Y" }}</strong></p>
+        <div class="form-actions form-actions--split">
+            <a class="button-secondary" href="{% url 'lista' %}">Cancelar</a>
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="button-danger">Confirmar eliminacion</button>
+            </form>
+        </div>
+    </section>
+</div>
+{% endblock %}

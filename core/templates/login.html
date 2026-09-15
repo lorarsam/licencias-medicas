@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero" aria-labelledby="titulo-principal">
+    <div class="container hero__content">
+        <p class="eyebrow">{{ ui.area }}</p>
+        <h1 id="titulo-principal">Ingresar al sistema</h1>
+        <p class="hero__description">Utilice sus credenciales de Django para gestionar licencias medicas.</p>
+    </div>
+</section>
+
+<div class="container workspace workspace--narrow">
+    <section class="panel panel--form" aria-labelledby="titulo-login">
+        <div class="panel__header">
+            <div>
+                <p class="section-number">01</p>
+                <h2 id="titulo-login">Inicio de sesion</h2>
+                <p>Las operaciones disponibles dependen de su rol.</p>
+            </div>
+        </div>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+            {% if formulario.non_field_errors %}
+            <div class="field-errors" role="alert">{{ formulario.non_field_errors }}</div>
+            {% endif %}
+            <div class="form-grid form-grid--single">
+                {% for campo in formulario %}
+                <div class="field{% if campo.errors %} field--error{% endif %}">
+                    <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+                    {{ campo }}
+                    {% for error in campo.errors %}
+                    <small class="field__error" role="alert">{{ error }}</small>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="button-primary">Ingresar <span aria-hidden="true">&#8594;</span></button>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

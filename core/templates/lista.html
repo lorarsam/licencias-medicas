@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero" aria-labelledby="titulo-principal">
+    <div class="container hero__content">
+        <p class="eyebrow">{{ ui.area }}</p>
+        <h1 id="titulo-principal">{{ ui.titulo_principal }}</h1>
+        <p class="hero__description">Gestion de licencias medicas almacenada en SQLite.</p>
+    </div>
+</section>
+
+<div class="container workspace">
+    <section class="metrics" aria-label="Resumen de licencias">
+        {% for metrica in metricas %}
+        <article class="metric metric--{{ metrica.clase }}">
+            <span>{{ metrica.etiqueta }}</span>
+            <strong>{{ metrica.valor }}</strong>
+        </article>
+        {% endfor %}
+    </section>
+
+    <section class="panel panel--records" aria-labelledby="titulo-registros">
+        <div class="panel__header panel__header--records">
+            <div>
+                <p class="section-number">01</p>
+                <h2 id="titulo-registros">Registro de licencias</h2>
+                <p>Consulte, edite o elimine logicamente una licencia.</p>
+            </div>
+            <a class="button-primary" href="{% url 'crear' %}">Crear licencia</a>
+        </div>
+
+        {% if registros %}
+        <div class="table-scroll" tabindex="0" role="region" aria-label="Listado de licencias medicas">
+            <table>
+                <caption class="visually-hidden">Listado de licencias medicas</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">{{ encabezados.medico }}</th>
+                        <th scope="col">{{ encabezados.rut_medico }}</th>
+                        <th scope="col">{{ encabezados.funcionario }}</th>
+                        <th scope="col">{{ encabezados.rut_funcionario }}</th>
+                        <th scope="col">{{ encabezados.dias_reposo }}</th>
+                        <th scope="col">{{ encabezados.fecha_emision }}</th>
+                        <th scope="col">{{ encabezados.tipo_licencia }}</th>
+                        <th scope="col">{{ encabezados.estado }}</th>
+                        <th scope="col">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reg in registros %}
+                    <tr>
+                        <td class="cell-strong">{{ reg.medico }}</td>
+                        <td class="cell-code">{{ reg.rut_medico }}</td>
+                        <td class="cell-strong">{{ reg.funcionario }}</td>
+                        <td class="cell-code">{{ reg.rut_funcionario }}</td>
+                        <td>{{ reg.dias_reposo }}</td>
+                        <td>{{ reg.fecha_emision|date:"d/m/Y" }}</td>
+                        <td>{{ reg.tipo_licencia }} - {{ reg.tipo_nombre }}</td>
+                        <td><span class="status status--{{ reg.estado_clase }}">{{ reg.estado }}</span></td>
+                        <td class="record-actions">
+                            <a href="{% url 'editar' reg.id %}">Editar</a>
+                            <a href="{% url 'eliminar' reg.id %}">Eliminar</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <span class="empty-state__mark" aria-hidden="true">0</span>
+            <h3>No hay licencias medicas registradas</h3>
+            <p>Las licencias creadas apareceran aqui.</p>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

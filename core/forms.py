@@ -1,10 +1,11 @@
 from django import forms
+from django.contrib.auth.forms import AuthenticationForm
 
+from core.models import LicenciaMedica
 from solucion import (
     ATRIBUTOS_FORMULARIO,
     AYUDAS_FORMULARIO,
     ETIQUETAS_FORMULARIO,
-    FORMATO_FECHA,
     FORMATO_FECHA_HTML,
     LARGO_MAXIMO_NOMBRE,
     LARGO_MAXIMO_RUT,
@@ -25,8 +26,8 @@ OPCIONES_TIPO_LICENCIA = (
 )
 
 
-class LicenciaMedicaForm(forms.Form):
-    nombre_medico = forms.CharField(
+class LicenciaMedicaForm(forms.ModelForm):
+    medico = forms.CharField(
         label=ETIQUETAS_FORMULARIO["nombre_medico"],
         max_length=LARGO_MAXIMO_NOMBRE,
         widget=forms.TextInput(attrs=ATRIBUTOS_FORMULARIO["nombre_medico"]),
@@ -39,7 +40,7 @@ class LicenciaMedicaForm(forms.Form):
         widget=forms.TextInput(attrs=ATRIBUTOS_FORMULARIO["rut_medico"]),
         error_messages=ERRORES_REQUERIDO,
     )
-    nombre_funcionario = forms.CharField(
+    funcionario = forms.CharField(
         label=ETIQUETAS_FORMULARIO["nombre_funcionario"],
         max_length=LARGO_MAXIMO_NOMBRE,
         widget=forms.TextInput(attrs=ATRIBUTOS_FORMULARIO["nombre_funcionario"]),
@@ -84,6 +85,37 @@ class LicenciaMedicaForm(forms.Form):
         },
     )
 
-    def clean_fecha_emision(self):
-        fecha = self.cleaned_data["fecha_emision"]
-        return fecha.strftime(FORMATO_FECHA)
+    class Meta:
+        model = LicenciaMedica
+        fields = (
+            "medico",
+            "rut_medico",
+            "funcionario",
+            "rut_funcionario",
+            "dias_reposo",
+            "fecha_emision",
+            "tipo_licencia",
+        )
+
+
+class InicioSesionForm(AuthenticationForm):
+    username = forms.CharField(
+        label="Usuario",
+        widget=forms.TextInput(
+            attrs={
+                "class": "control",
+                "autocomplete": "username",
+                "autofocus": True,
+            }
+        ),
+    )
+    password = forms.CharField(
+        label="Contrasena",
+        strip=False,
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "control",
+                "autocomplete": "current-password",
+            }
+        ),
+    )

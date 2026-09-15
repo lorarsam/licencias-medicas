@@ -406,10 +406,92 @@ h1 {
     background: var(--color-accent-hover);
 }
 
+.button-secondary,
+.button-danger {
+    display: inline-flex;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    padding: 11px 20px;
+    font: inherit;
+    font-weight: 800;
+    border-radius: var(--radius-small);
+    text-decoration: none;
+}
+
+.button-secondary {
+    color: var(--color-ink);
+    background: var(--color-white);
+    border: 1px solid var(--color-control-border);
+}
+
+.button-danger {
+    color: var(--color-white);
+    background: var(--color-danger);
+    border: 1px solid var(--color-danger);
+    cursor: pointer;
+}
+
+.form-actions--split {
+    align-items: center;
+    justify-content: space-between;
+}
+
+.record-actions {
+    white-space: nowrap;
+}
+
+.record-actions a {
+    margin-right: 10px;
+    color: var(--color-accent-dark);
+    font-weight: 800;
+}
+
+.notices {
+    margin-top: 24px;
+}
+
 .button-primary:focus-visible,
 .table-scroll:focus-visible {
     outline: 3px solid var(--color-focus);
     outline-offset: 3px;
+}
+
+.session-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.session-user {
+    color: var(--color-ink);
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+.session-controls form {
+    margin: 0;
+}
+
+.button-session {
+    padding: 7px 12px;
+    color: var(--color-navy-deep);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 800;
+    background: var(--color-accent);
+    border: 1px solid var(--color-accent-dark);
+    border-radius: var(--radius-small);
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.workspace--narrow {
+    max-width: 720px;
+}
+
+.form-grid--single {
+    grid-template-columns: minmax(0, 1fr);
 }
 
 .panel--records {

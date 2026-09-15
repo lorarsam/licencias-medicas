@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero" aria-labelledby="titulo-principal">
+    <div class="container hero__content">
+        <p class="eyebrow">{{ ui.area }}</p>
+        <h1 id="titulo-principal">{{ accion }} licencia medica</h1>
+        <p class="hero__description">Ingrese los antecedentes y vuelva a evaluar la licencia.</p>
+    </div>
+</section>
+
+<div class="container workspace">
+    <section class="panel panel--form" aria-labelledby="titulo-formulario">
+        <div class="panel__header">
+            <div>
+                <p class="section-number">01</p>
+                <h2 id="titulo-formulario">{{ accion }} una licencia</h2>
+                <p>Todos los campos son obligatorios.</p>
+            </div>
+            <span class="required-note">Persistencia en SQLite</span>
+        </div>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+            {% if formulario.non_field_errors %}
+            <div class="field-errors" role="alert">{{ formulario.non_field_errors }}</div>
+            {% endif %}
+            <div class="form-grid">
+                {% for campo in formulario %}
+                <div class="field{% if campo.errors %} field--error{% endif %}">
+                    <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+                    {{ campo }}
+                    {% if campo.help_text %}<small class="field__help">{{ campo.help_text }}</small>{% endif %}
+                    {% for error in campo.errors %}<small class="field__error" role="alert">{{ error }}</small>{% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+            <div class="form-actions form-actions--split">
+                <a class="button-secondary" href="{% url 'lista' %}">Cancelar</a>
+                <button type="submit" class="button-primary">Guardar licencia <span aria-hidden="true">&#8594;</span></button>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

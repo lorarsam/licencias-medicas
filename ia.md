@@ -1,10 +1,65 @@
-# Uso de IA en el proyecto
+# Uso De IA En El Proyecto
 
-## Herramienta y finalidad
-Use OpenCode para ordenar el plan y revisar el proyecto contra las instrucciones de la evaluacion ES1. La consulta concreta fue: "Revisa nuevamente las instrucciones y confirmame si falta algo por hacer o si esta todo listo para evaluar".
+## Herramienta Utilizada
 
-## Respuesta recibida
-La herramienta confirmo que Django, JSON y `tabulate` funcionaban, pero detecto tres riesgos: la consulta de IA no estaba analizada en mis palabras, las entradas no numericas no se guardaban y la regla no mostraba el operador `and` mencionado en el checklist.
+Se utilizo OpenCode como herramienta de inteligencia artificial para analizar el proyecto, revisar las instrucciones de `Migracion-ES1-a-Eva2.pdf`, proponer la arquitectura de Eva 2 y apoyar la implementacion y verificacion del codigo.
 
-## Revision personal y correccion
-Al principio no entendi por que usar `or` no bastaba si la decision ya funcionaba. Revise el ejemplo del criterio 1.1.2 y comprendi que debia demostrar una combinacion con `and`; por eso lo use para comprobar que ambos nombres sean validos. Tambien conserve las entradas no numericas como datos invalidos para que pasen por la misma regla, se guarden en JSON y aparezcan en la tabla, sin agregar OCR, base de datos ni otras funciones fuera del MVP.
+## Consultas Realizadas
+
+Las consultas principales fueron:
+
+1. "En base a este proyecto, ahora hay que hacer lo siguiente: configurar una base de datos, utilizar el administrador de Django, implementar CRUD, sesiones y seguridad."
+2. "Lee `Migracion-ES1-a-Eva2.pdf` y comprueba las instrucciones y pasos a seguir."
+3. "Dime los pasos a seguir segun las instrucciones."
+4. "Planifiquemos etapa 1."
+5. "Procede con la etapa 1", seguida de solicitudes para implementar la migracion de datos, el administrador, el CRUD y la autenticacion por roles.
+
+## Orientaciones Recibidas
+
+La herramienta identifico que la version ES1 no tenia modelos Django, SQLite, administrador, CRUD completo, autenticacion ni sesiones. Tambien indico que la funcion `decidir()` debia conservarse y reutilizarse desde las vistas sin copiar su cadena de condiciones.
+
+Las orientaciones tecnicas principales fueron:
+
+- Crear el modelo `LicenciaMedica` a partir de los campos de `datos.json`.
+- Usar SQLite y migraciones Django.
+- Importar los datos existentes antes de abandonar JSON como fuente web.
+- Registrar el modelo en `admin.py` con columnas, filtros y buscador.
+- Separar las operaciones CRUD en vistas independientes.
+- Usar borrado logico con `eliminado` y `fecha_eliminacion`.
+- Usar usuarios, sesiones y grupos incluidos en Django.
+- Aplicar permisos en el servidor y no solamente ocultar botones en las plantillas.
+- Probar accesos directos a las rutas protegidas.
+
+## Correcciones Y Decisiones Personales
+
+No se copiaron todas las sugerencias de forma automatica. Se realizaron estas correcciones:
+
+- La IA propuso inicialmente agregar OCR por fotografia o PDF, pero el documento de Eva 2 no lo exige. Se dejo fuera del alcance obligatorio para priorizar SQLite, Admin, CRUD, login y roles.
+- Se mantuvo un unico modelo `LicenciaMedica` en vez de crear modelos separados para medico y funcionario, porque el PDF indica transformar las claves existentes en campos del modelo.
+- No se creo un modelo propio de contrasenas. Se utilizo `django.contrib.auth` y las sesiones incorporadas en Django.
+- No se dejaron permisos solo en las plantillas. Las vistas usan `requiere_rol()` para validar el acceso en el servidor.
+- No se duplico la cadena de `if/elif` de la regla. Crear y editar llaman a `decidir()` desde `solucion.py`.
+- El borrado fisico sugerido para un CRUD comun se reemplazo por borrado logico, de acuerdo con el modelo solicitado en el PDF.
+- La importacion desde `datos.json` se implemento como comando Django transaccional e idempotente para evitar duplicados.
+
+## Verificacion Realizada
+
+La suite de pruebas verifica:
+
+- SQLite y migraciones.
+- Importacion inicial e idempotencia.
+- Administrador Django.
+- Login y logout.
+- Sesiones.
+- Permisos de `viewer`, `normal` y `admin`.
+- Creacion, consulta, edicion y borrado logico.
+- CSRF en operaciones POST.
+- Reutilizacion de `decidir()` y sus cuatro resultados.
+
+La implementacion se verifico con:
+
+```powershell
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python manage.py test
+```
