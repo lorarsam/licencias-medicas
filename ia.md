@@ -12,7 +12,8 @@ Las consultas principales fueron:
 2. "Lee `Migracion-ES1-a-Eva2.pdf` y comprueba las instrucciones y pasos a seguir."
 3. "Dime los pasos a seguir segun las instrucciones."
 4. "Planifiquemos etapa 1."
-5. "Procede con la etapa 1", seguida de solicitudes para implementar la migracion de datos, el administrador, el CRUD y la autenticacion por roles.
+5. "Planifica la creacion del modelo LicenciaMedica, las migraciones de SQLite y los roles viewer, normal y admin sin duplicar decidir()."
+6. "Procede con la etapa 1", seguida de solicitudes para implementar la migracion de datos, el administrador, el CRUD y la autenticacion por roles.
 
 ## Orientaciones Recibidas
 
