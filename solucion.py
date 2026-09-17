@@ -156,15 +156,16 @@ TEXTOS_WEB = {
 }
 
 ENCABEZADOS_TABLA = {
-    "medico": "Medico",
-    "rut_medico": "RUT medico",
+    "medico": "Medico tratante",
+    "rut_medico": "RUT del medico",
     "funcionario": "Funcionario",
-    "rut_funcionario": "RUT funcionario",
+    "rut_funcionario": "RUT del funcionario",
     "dias_reposo": "Dias",
     "fecha_emision": "Fecha",
-    "tipo_licencia": "Tipo",
+    "tipo_licencia": "Tipo de licencia",
     "estado": "Estado",
     "motivo": "Motivo",
+    "acciones": "Acciones",
     "situacion_medico": "Situacion medico",
 }
 

@@ -31,7 +31,7 @@
     --radius-small: 4px;
     --radius-medium: 10px;
     --shadow-panel: 0 18px 45px rgba(16, 40, 60, 0.08);
-    --content-width: 1240px;
+    --content-width: 1400px;
 }
 
 * {
@@ -639,12 +639,17 @@ h1 {
 
 .table-scroll {
     max-width: 100%;
-    overflow-x: auto;
+    overflow: visible;
+}
+
+.table-scroll--records {
+    margin: 0 30px 30px;
 }
 
 table {
     width: 100%;
-    min-width: 1120px;
+    min-width: 0;
+    table-layout: fixed;
     border-collapse: collapse;
 }
 
@@ -674,6 +679,54 @@ tbody tr:hover {
 
 td {
     font-size: 0.82rem;
+    overflow-wrap: anywhere;
+}
+
+.table-scroll--records th:nth-child(1),
+.table-scroll--records td:nth-child(1) {
+    width: 11%;
+}
+
+.table-scroll--records th:nth-child(2),
+.table-scroll--records td:nth-child(2),
+.table-scroll--records th:nth-child(4),
+.table-scroll--records td:nth-child(4) {
+    width: 9%;
+}
+
+.table-scroll--records th:nth-child(3),
+.table-scroll--records td:nth-child(3) {
+    width: 11%;
+}
+
+.table-scroll--records th:nth-child(5),
+.table-scroll--records td:nth-child(5) {
+    width: 14%;
+}
+
+.table-scroll--records th:nth-child(6),
+.table-scroll--records td:nth-child(6) {
+    width: 6%;
+}
+
+.table-scroll--records th:nth-child(7),
+.table-scroll--records td:nth-child(7) {
+    width: 8%;
+}
+
+.table-scroll--records th:nth-child(8),
+.table-scroll--records td:nth-child(8) {
+    width: 10%;
+}
+
+.table-scroll--records th:nth-child(9),
+.table-scroll--records td:nth-child(9) {
+    width: 12%;
+}
+
+.table-scroll--records th:nth-child(10),
+.table-scroll--records td:nth-child(10) {
+    width: 10%;
 }
 
 .cell-strong {
@@ -682,12 +735,23 @@ td {
 
 .cell-code {
     font-variant-numeric: tabular-nums;
-    white-space: nowrap;
+    white-space: normal;
 }
 
 .cell-reason {
-    min-width: 220px;
+    min-width: 0;
     color: var(--color-muted);
+}
+
+.cell-actions .record-actions {
+    display: grid;
+    gap: 6px;
+}
+
+.cell-actions .record-actions a {
+    padding: 5px 6px;
+    font-size: 0.75rem;
+    text-align: center;
 }
 
 .status {
@@ -695,7 +759,8 @@ td {
     padding: 5px 9px;
     font-size: 0.72rem;
     font-weight: 800;
-    white-space: nowrap;
+    text-align: center;
+    white-space: normal;
     border-radius: 99px;
 }
 
@@ -798,6 +863,71 @@ td {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    .table-scroll--records table,
+    .table-scroll--records tbody,
+    .table-scroll--records tr,
+    .table-scroll--records td {
+        display: block;
+    }
+
+    .table-scroll--records thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    .table-scroll--records tbody tr {
+        margin-bottom: 14px;
+        padding: 8px 16px;
+        background: var(--color-white);
+        border: 1px solid var(--color-line);
+        border-radius: var(--radius-small);
+    }
+
+    .table-scroll--records tbody tr:last-child {
+        margin-bottom: 0;
+    }
+
+    .table-scroll--records td {
+        display: grid;
+        grid-template-columns: minmax(100px, 38%) minmax(0, 1fr);
+        gap: 10px;
+        width: auto !important;
+        padding: 9px 0;
+        border-bottom: 1px solid var(--color-line);
+    }
+
+    .table-scroll--records td::before {
+        color: var(--color-muted);
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        content: attr(data-label);
+    }
+
+    .table-scroll--records td:last-child {
+        border-bottom: 0;
+    }
+
+    .table-scroll--records .cell-actions {
+        display: block;
+    }
+
+    .table-scroll--records .cell-actions::before {
+        display: block;
+        margin-bottom: 7px;
+    }
+
+    .table-scroll--records .cell-actions .record-actions {
+        display: flex;
+    }
+
     .required-note {
         display: block;
         margin-top: 12px;
@@ -852,6 +982,11 @@ td {
     }
 
     .records-list {
+        margin-right: 18px;
+        margin-left: 18px;
+    }
+
+    .table-scroll--records {
         margin-right: 18px;
         margin-left: 18px;
     }

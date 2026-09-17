@@ -158,6 +158,30 @@ class LicenciaCRUDViewTests(TestCase):
         self.assertContains(respuesta, ESTADO_ACEPTADA)
         self.assertContains(respuesta, TIPOS_LICENCIA[1]["nombre"])
 
+    def test_lista_muestra_registros_en_tabla_con_acciones(self):
+        licencia = LicenciaMedica.objects.create(
+            medico="Ana Ejemplo",
+            rut_medico="12.345.678-5",
+            funcionario="Luis Prueba",
+            rut_funcionario="11.111.111-1",
+            dias_reposo=7,
+            fecha_emision=date(2026, 1, 1),
+            tipo_licencia=1,
+            estado=ESTADO_ACEPTADA,
+            motivo="Licencia registrada correctamente",
+        )
+
+        respuesta = self.client.get(self.url)
+
+        self.assertContains(respuesta, "<table")
+        self.assertContains(respuesta, "Medico tratante")
+        self.assertContains(respuesta, "RUT del funcionario")
+        self.assertContains(respuesta, "Tipo de licencia")
+        self.assertContains(respuesta, "01/01/2026")
+        self.assertContains(respuesta, reverse("editar", args=[licencia.pk]))
+        self.assertContains(respuesta, reverse("eliminar", args=[licencia.pk]))
+        self.assertNotContains(respuesta, "license-card")
+
     def test_resumen_redirige_al_listado(self):
         respuesta = self.client.get(reverse("resumen"))
 

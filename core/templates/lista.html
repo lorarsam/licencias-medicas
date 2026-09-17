@@ -30,67 +30,52 @@
         </div>
 
         {% if registros %}
-        <div class="records-list" aria-label="{{ ui.tabla_etiqueta }}">
-            {% for reg in registros %}
-            <article class="license-card" aria-labelledby="licencia-{{ reg.id }}">
-                <header class="license-card__header">
-                    <div>
-                        <p class="license-card__eyebrow">{{ ui.seccion_registros }} {{ forloop.counter }}</p>
-                        <h3 id="licencia-{{ reg.id }}">{{ reg.medico }}</h3>
-                        <p class="license-card__subtitle">{{ encabezados.rut_medico }}: {{ reg.rut_medico }}</p>
-                    </div>
-                    <div class="license-card__statuses" aria-label="{{ encabezados.estado }}">
-                        <span class="status status--{{ reg.estado_clase }}">{{ reg.estado }}</span>
-                        {% if reg.medico_sancionado %}
-                        <span class="status status--rechazada">{{ reg.situacion_medico }}</span>
-                        {% else %}
-                        <span class="status status--aceptada">{{ reg.situacion_medico }}</span>
-                        {% endif %}
-                    </div>
-                </header>
-
-                <div class="license-card__body">
-                    <dl class="license-card__details">
-                        <div class="license-card__detail">
-                            <dt>{{ encabezados.funcionario }}</dt>
-                            <dd>{{ reg.funcionario }}</dd>
-                        </div>
-                        <div class="license-card__detail">
-                            <dt>{{ encabezados.rut_funcionario }}</dt>
-                            <dd class="cell-code">{{ reg.rut_funcionario }}</dd>
-                        </div>
-                        <div class="license-card__detail">
-                            <dt>{{ encabezados.dias_reposo }}</dt>
-                            <dd>{{ reg.dias_reposo }}</dd>
-                        </div>
-                        <div class="license-card__detail">
-                            <dt>{{ encabezados.fecha_emision }}</dt>
-                            <dd>{{ reg.fecha_emision|date:"d/m/Y" }}</dd>
-                        </div>
-                        <div class="license-card__detail license-card__detail--wide">
-                            <dt>{{ encabezados.tipo_licencia }}</dt>
-                            <dd>{{ reg.tipo_licencia }} - {{ reg.tipo_nombre }}</dd>
-                        </div>
-                        <div class="license-card__detail license-card__detail--wide">
-                            <dt>{{ encabezados.estado }}</dt>
-                            <dd>{{ reg.estado }}</dd>
-                        </div>
-                    </dl>
-
-                    <div class="license-card__reason">
-                        <span class="license-card__label">{{ encabezados.motivo }}</span>
-                        <p>{{ reg.motivo }}</p>
-                    </div>
-                </div>
-
-                <footer class="license-card__footer">
-                    <div class="record-actions">
-                        <a href="{% url 'editar' reg.id %}">{{ ui.accion_editar }}</a>
-                        <a class="record-actions__delete" href="{% url 'eliminar' reg.id %}">{{ ui.accion_eliminar }}</a>
-                    </div>
-                </footer>
-            </article>
-            {% endfor %}
+        <div class="table-scroll table-scroll--records" tabindex="0" role="region" aria-label="{{ ui.tabla_etiqueta }}">
+            <table>
+                <caption class="visually-hidden">{{ ui.tabla_etiqueta }}</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">{{ encabezados.funcionario }}</th>
+                        <th scope="col">{{ encabezados.rut_funcionario }}</th>
+                        <th scope="col">{{ encabezados.medico }}</th>
+                        <th scope="col">{{ encabezados.rut_medico }}</th>
+                        <th scope="col">{{ encabezados.tipo_licencia }}</th>
+                        <th scope="col">{{ encabezados.dias_reposo }}</th>
+                        <th scope="col">{{ encabezados.fecha_emision }}</th>
+                        <th scope="col">{{ encabezados.estado }}</th>
+                        <th scope="col">{{ encabezados.motivo }}</th>
+                        <th scope="col">{{ encabezados.acciones }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reg in registros %}
+                    <tr>
+                        <td data-label="{{ encabezados.funcionario }}" class="cell-strong">{{ reg.funcionario }}</td>
+                        <td data-label="{{ encabezados.rut_funcionario }}" class="cell-code">{{ reg.rut_funcionario }}</td>
+                        <td data-label="{{ encabezados.medico }}">{{ reg.medico }}</td>
+                        <td data-label="{{ encabezados.rut_medico }}" class="cell-code">{{ reg.rut_medico }}</td>
+                        <td data-label="{{ encabezados.tipo_licencia }}">{{ reg.tipo_licencia }} - {{ reg.tipo_nombre }}</td>
+                        <td data-label="{{ encabezados.dias_reposo }}">{{ reg.dias_reposo }}</td>
+                        <td data-label="{{ encabezados.fecha_emision }}">{{ reg.fecha_emision|date:"d/m/Y" }}</td>
+                        <td data-label="{{ encabezados.estado }}" class="cell-status">
+                            <span class="status status--{{ reg.estado_clase }}">{{ reg.estado }}</span>
+                            {% if reg.medico_sancionado %}
+                            <span class="status status--rechazada">{{ reg.situacion_medico }}</span>
+                            {% else %}
+                            <span class="status status--aceptada">{{ reg.situacion_medico }}</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="{{ encabezados.motivo }}" class="cell-reason">{{ reg.motivo }}</td>
+                        <td data-label="{{ encabezados.acciones }}" class="cell-actions">
+                            <div class="record-actions">
+                                <a href="{% url 'editar' reg.id %}">{{ ui.accion_editar }}</a>
+                                <a class="record-actions__delete" href="{% url 'eliminar' reg.id %}">{{ ui.accion_eliminar }}</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
         {% else %}
         <div class="empty-state">
