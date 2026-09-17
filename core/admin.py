@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils import timezone
 
-from .models import LicenciaMedica
+from .models import LicenciaMedica, MedicoSancionado
 
 
 @admin.register(LicenciaMedica)
@@ -48,3 +48,19 @@ class LicenciaMedicaAdmin(admin.ModelAdmin):
 
     def delete_model(self, request, obj):
         obj.soft_delete()
+
+
+@admin.register(MedicoSancionado)
+class MedicoSancionadoAdmin(admin.ModelAdmin):
+    list_display = (
+        "rut_medico",
+        "nombre_medico",
+        "numero_oficio",
+        "inicio_suspension",
+        "fin_suspension",
+        "suspension_dias",
+    )
+    list_filter = ("inicio_suspension", "fin_suspension")
+    search_fields = ("rut_medico", "nombre_medico", "numero_oficio")
+    readonly_fields = ("fecha_carga", "datos_origen")
+    date_hierarchy = "inicio_suspension"

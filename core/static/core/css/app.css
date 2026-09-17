@@ -438,13 +438,26 @@ h1 {
 }
 
 .record-actions {
-    white-space: nowrap;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
 }
 
 .record-actions a {
-    margin-right: 10px;
+    padding: 7px 11px;
     color: var(--color-accent-dark);
     font-weight: 800;
+    border: 1px solid var(--color-control-border);
+    border-radius: var(--radius-small);
+    text-decoration: none;
+}
+
+.record-actions a:hover {
+    background: var(--color-white);
+}
+
+.record-actions__delete {
+    color: var(--color-danger) !important;
 }
 
 .notices {
@@ -452,7 +465,8 @@ h1 {
 }
 
 .button-primary:focus-visible,
-.table-scroll:focus-visible {
+.table-scroll:focus-visible,
+.record-actions a:focus-visible {
     outline: 3px solid var(--color-focus);
     outline-offset: 3px;
 }
@@ -503,6 +517,124 @@ h1 {
 .empty-state {
     margin-right: 30px;
     margin-left: 30px;
+}
+
+.records-list {
+    display: grid;
+    gap: 18px;
+    margin: 0 30px 30px;
+}
+
+.license-card {
+    min-width: 0;
+    overflow: hidden;
+    background: var(--color-white);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-medium);
+}
+
+.license-card__header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 24px;
+    padding: 22px 24px;
+    color: var(--color-white);
+    background: var(--color-navy);
+}
+
+.license-card__eyebrow,
+.license-card__subtitle,
+.license-card h3 {
+    margin: 0;
+}
+
+.license-card__eyebrow {
+    margin-bottom: 5px;
+    color: var(--color-accent);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.license-card h3 {
+    min-width: 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.35rem, 2.4vw, 1.8rem);
+    font-weight: 400;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+}
+
+.license-card__subtitle {
+    margin-top: 7px;
+    color: var(--color-hero-muted);
+    font-size: 0.86rem;
+}
+
+.license-card__statuses {
+    display: flex;
+    max-width: 360px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.license-card__body {
+    padding: 24px;
+}
+
+.license-card__details {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px 24px;
+    margin: 0;
+}
+
+.license-card__detail {
+    min-width: 0;
+}
+
+.license-card__detail--wide {
+    grid-column: span 2;
+}
+
+.license-card__detail dt,
+.license-card__label {
+    color: var(--color-muted);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.license-card__detail dd {
+    margin: 5px 0 0;
+    font-size: 0.94rem;
+    overflow-wrap: anywhere;
+}
+
+.license-card__reason {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid var(--color-line);
+}
+
+.license-card__reason p {
+    margin: 6px 0 0;
+    color: var(--color-muted);
+    overflow-wrap: anywhere;
+}
+
+.license-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 18px;
+    padding: 16px 24px;
+    background: var(--color-row-hover);
+    border-top: 1px solid var(--color-line);
 }
 
 .table-scroll {
@@ -653,6 +785,19 @@ td {
         display: block;
     }
 
+    .license-card__header {
+        grid-template-columns: 1fr;
+    }
+
+    .license-card__statuses {
+        max-width: none;
+        justify-content: flex-start;
+    }
+
+    .license-card__details {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .required-note {
         display: block;
         margin-top: 12px;
@@ -704,6 +849,33 @@ td {
     .empty-state {
         margin-right: 18px;
         margin-left: 18px;
+    }
+
+    .records-list {
+        margin-right: 18px;
+        margin-left: 18px;
+    }
+
+    .license-card__header,
+    .license-card__body {
+        padding: 20px 18px;
+    }
+
+    .license-card__footer {
+        display: block;
+        padding: 16px 18px;
+    }
+
+    .license-card__footer .record-actions {
+        margin-top: 12px;
+    }
+
+    .license-card__details {
+        grid-template-columns: 1fr;
+    }
+
+    .license-card__detail--wide {
+        grid-column: auto;
     }
 
     .form-actions,

@@ -4,13 +4,20 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
+from core.constants import (
+    ESTADO_RECHAZO_SANCION,
+    SITUACION_MEDICO_HABILITADO,
+    SITUACION_MEDICO_SANCIONADO,
+)
 from core.decorators import requiere_rol
 from core.forms import InicioSesionForm, LicenciaMedicaForm
 from core.models import LicenciaMedica
+from core.services import evaluar_licencia
 from solucion import (
     CLASE_ESTADO_DESCONOCIDO,
     CLASE_INDICADOR_TOTAL,
     CLASES_ESTADO,
+    ENCABEZADOS_TABLA,
     ESTADO_ACEPTADA,
     ESTADO_INVALIDO,
     ESTADO_RECHAZO_DIAS,
@@ -19,7 +26,6 @@ from solucion import (
     METODO_POST,
     RUTA_ESTILOS,
     TEXTOS_WEB,
-    decidir,
 )
 
 
@@ -33,8 +39,8 @@ def _contexto_base(**extra):
     return contexto
 
 
-def _evaluar_licencia(licencia):
-    estado, motivo = decidir(
+def _fila_licencia(licencia):
+    estado, motivo, sancion = evaluar_licencia(
         licencia.medico,
         licencia.rut_medico,
         licencia.funcionario,
@@ -43,11 +49,6 @@ def _evaluar_licencia(licencia):
         licencia.fecha_emision.strftime(FORMATO_FECHA),
         licencia.tipo_licencia,
     )
-    licencia.estado = estado
-    licencia.motivo = motivo
-
-
-def _fila_licencia(licencia):
     return {
         "id": licencia.pk,
         "medico": licencia.medico,
@@ -58,11 +59,19 @@ def _fila_licencia(licencia):
         "fecha_emision": licencia.fecha_emision,
         "tipo_licencia": licencia.tipo_licencia,
         "tipo_nombre": licencia.get_tipo_licencia_display(),
-        "estado": licencia.estado,
+        "estado": estado,
         "estado_clase": CLASES_ESTADO.get(
-            licencia.estado, CLASE_ESTADO_DESCONOCIDO,
+            estado,
+            "rechazada" if estado == ESTADO_RECHAZO_SANCION else CLASE_ESTADO_DESCONOCIDO,
         ),
-        "motivo": licencia.motivo,
+        "motivo": motivo,
+        "medico_sancionado": sancion is not None,
+        "situacion_medico": (
+            SITUACION_MEDICO_SANCIONADO
+            if sancion
+            else SITUACION_MEDICO_HABILITADO
+        ),
+        "sancion": sancion,
     }
 
 
@@ -71,11 +80,12 @@ def _metricas(registros):
         ESTADO_ACEPTADA: 0,
         ESTADO_RECHAZO_FECHA: 0,
         ESTADO_RECHAZO_DIAS: 0,
+        ESTADO_RECHAZO_SANCION: 0,
         ESTADO_INVALIDO: 0,
     }
     for registro in registros:
-        if registro.estado in conteos:
-            conteos[registro.estado] += 1
+        if registro["estado"] in conteos:
+            conteos[registro["estado"]] += 1
 
     return (
         {
@@ -90,7 +100,11 @@ def _metricas(registros):
         },
         {
             "etiqueta": TEXTOS_WEB["indicador_rechazadas"],
-            "valor": conteos[ESTADO_RECHAZO_FECHA] + conteos[ESTADO_RECHAZO_DIAS],
+            "valor": (
+                conteos[ESTADO_RECHAZO_FECHA]
+                + conteos[ESTADO_RECHAZO_DIAS]
+                + conteos[ESTADO_RECHAZO_SANCION]
+            ),
             "clase": CLASES_ESTADO[ESTADO_RECHAZO_FECHA],
         },
         {
@@ -137,20 +151,11 @@ def lista(request):
     registros = list(
         LicenciaMedica.objects.filter(eliminado=False)
     )
+    filas = [_fila_licencia(registro) for registro in registros]
     contexto = _contexto_base(
-        encabezados={
-            "medico": "Medico",
-            "rut_medico": "RUT medico",
-            "funcionario": "Funcionario",
-            "rut_funcionario": "RUT funcionario",
-            "dias_reposo": "Dias",
-            "fecha_emision": "Fecha",
-            "tipo_licencia": "Tipo",
-            "estado": "Estado",
-            "motivo": "Motivo",
-        },
-        metricas=_metricas(registros),
-        registros=[_fila_licencia(registro) for registro in registros],
+        encabezados=ENCABEZADOS_TABLA,
+        metricas=_metricas(filas),
+        registros=filas,
     )
     return render(request, "lista.html", contexto)
 
@@ -161,7 +166,17 @@ def crear(request):
     formulario = LicenciaMedicaForm(request.POST or None)
     if request.method == METODO_POST and formulario.is_valid():
         licencia = formulario.save(commit=False)
-        _evaluar_licencia(licencia)
+        estado, motivo, _ = evaluar_licencia(
+            licencia.medico,
+            licencia.rut_medico,
+            licencia.funcionario,
+            licencia.rut_funcionario,
+            licencia.dias_reposo,
+            licencia.fecha_emision.strftime(FORMATO_FECHA),
+            licencia.tipo_licencia,
+        )
+        licencia.estado = estado
+        licencia.motivo = motivo
         licencia.save()
         messages.success(request, "Licencia creada correctamente.")
         return redirect("lista")
@@ -184,7 +199,17 @@ def editar(request, pk):
     formulario = LicenciaMedicaForm(request.POST or None, instance=licencia)
     if request.method == METODO_POST and formulario.is_valid():
         licencia = formulario.save(commit=False)
-        _evaluar_licencia(licencia)
+        estado, motivo, _ = evaluar_licencia(
+            licencia.medico,
+            licencia.rut_medico,
+            licencia.funcionario,
+            licencia.rut_funcionario,
+            licencia.dias_reposo,
+            licencia.fecha_emision.strftime(FORMATO_FECHA),
+            licencia.tipo_licencia,
+        )
+        licencia.estado = estado
+        licencia.motivo = motivo
         licencia.save()
         messages.success(request, "Licencia actualizada correctamente.")
         return redirect("lista")

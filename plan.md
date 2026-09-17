@@ -14,7 +14,8 @@ La regla `decidir()` continua siendo la unica responsable de clasificar cada lic
 
 ### Alcance De Eva 2
 
-- **Entra**: base de datos SQLite, modelo Django, migraciones, carga inicial desde `datos.json`, administrador Django, operaciones CRUD, borrado logico, login, sesiones, grupos y permisos.
+- **Entra**: base de datos SQLite, modelos Django, migraciones, carga inicial desde `datos.json`, importacion de sanciones y administrador Django.
+- **Entra**: operaciones CRUD, borrado logico, login, sesiones, grupos, permisos y rechazo de licencias emitidas por medicos sancionados.
 - **Entra**: validacion de permisos en el servidor y proteccion CSRF para formularios POST.
 - **Entra**: pruebas automatizadas de modelos, importacion, CRUD, autenticacion y autorizacion.
 - **No entra**: OCR, carga de fotografias o PDF, API externa, correo y conexion con sistemas externos.
@@ -35,6 +36,7 @@ La regla `decidir()` continua siendo la unica responsable de clasificar cada lic
 | **Must** | Eliminar logicamente licencias desde `/licencias/<id>/eliminar/` |
 | **Must** | Implementar login, logout y sesiones Django |
 | **Must** | Implementar los roles `viewer`, `normal` y `admin` |
+| **Must** | Consultar sanciones importadas y rechazar licencias durante una suspension vigente |
 | **Must** | Actualizar `plan.md` e `ia.md` |
 | **Should** | Mejorar reportes y filtros del listado |
 | **Could** | Incorporar OCR en una etapa posterior |
@@ -78,6 +80,21 @@ El modelo contiene:
 
 El borrado es logico: el registro permanece en la base y deja de aparecer en el listado activo.
 
+### Modelo `MedicoSancionado`
+
+Las sanciones se importan desde `suseso.sqlite3` hacia el modelo `MedicoSancionado`. El
+RUT se normaliza antes de comparar y cada sancion conserva su periodo de suspension,
+oficio, fuente y datos originales.
+
+La carga se ejecuta con:
+
+```powershell
+python manage.py importar_sanciones --path suseso.sqlite3
+```
+
+No existe ningun medico sancionado escrito en el codigo. La informacion proviene de la
+fuente importada y puede actualizarse ejecutando nuevamente el comando.
+
 ### Regla De Decision
 
 | # | Condicion | Resultado |
@@ -87,7 +104,12 @@ El borrado es logico: el registro permanece en la base y deja de aparecer en el 
 | 3 | Los dias superan el maximo del tipo de licencia | Rechazo - dias excedidos |
 | 4 | Todos los datos son validos | Aceptada |
 
-La regla esta implementada en `solucion.py` y las vistas la importan mediante `decidir()` al crear o editar.
+La regla base esta implementada en `solucion.py` y se importa mediante `decidir()` al
+crear o editar. Luego, `evaluar_licencia()` realiza una verificacion adicional: si el
+resultado base seria `Aceptada` y el RUT tiene una suspension vigente para la fecha de
+emision, el resultado se cambia a `Rechazo - medico sancionado`.
+
+La regla `decidir()` no fue reescrita ni duplicada.
 
 ### Rutas Web
 
@@ -115,6 +137,7 @@ Los grupos y permisos se configuran con:
 
 ```powershell
 python manage.py crear_roles
+python manage.py importar_sanciones --path suseso.sqlite3
 ```
 
 Las contrasenas se administran exclusivamente mediante el sistema de usuarios de Django.
@@ -143,8 +166,11 @@ python manage.py crear_roles
 | `core/models.py` | Modelo y borrado logico |
 | `core/forms.py` | Formularios de licencia y login |
 | `core/views.py` | Login, CRUD y reutilizacion de `decidir()` |
+| `core/services.py` | Verificacion de sanciones y evaluacion adicional |
+| `core/constants.py` | Estado de rechazo por sancion y situacion del medico |
 | `core/decorators.py` | Autorizacion por rol |
 | `core/admin.py` | Configuracion del administrador |
+| `core/management/commands/importar_sanciones.py` | Importacion de sanciones |
 | `core/management/commands/cargar_datos.py` | Migracion inicial desde JSON |
 | `core/management/commands/crear_roles.py` | Creacion de grupos y permisos |
 | `miproyecto/settings.py` | SQLite, sesiones y autenticacion |

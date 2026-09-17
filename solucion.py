@@ -142,6 +142,9 @@ TEXTOS_WEB = {
     "indicador_aceptadas": "Aceptadas",
     "indicador_rechazadas": "Rechazadas",
     "indicador_invalidas": "Datos invalidos",
+    "boton_crear": "Crear licencia",
+    "accion_editar": "Editar",
+    "accion_eliminar": "Eliminar",
     "seccion_registros": "Registro de licencias",
     "seccion_registros_numero": "02",
     "descripcion_registros": "Resultados calculados con las reglas centralizadas del sistema.",
@@ -162,6 +165,7 @@ ENCABEZADOS_TABLA = {
     "tipo_licencia": "Tipo",
     "estado": "Estado",
     "motivo": "Motivo",
+    "situacion_medico": "Situacion medico",
 }
 
 TIPOS_LICENCIA = {

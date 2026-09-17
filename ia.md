@@ -14,6 +14,7 @@ Las consultas principales fueron:
 4. "Planifiquemos etapa 1."
 5. "Planifica la creacion del modelo LicenciaMedica, las migraciones de SQLite y los roles viewer, normal y admin sin duplicar decidir()."
 6. "Procede con la etapa 1", seguida de solicitudes para implementar la migracion de datos, el administrador, el CRUD y la autenticacion por roles.
+7. "El medico ingresado es un medico sancionado; debe mostrarse un aviso y rechazarse la licencia sin hardcodear personas."
 
 ## Orientaciones Recibidas
 
@@ -30,6 +31,7 @@ Las orientaciones tecnicas principales fueron:
 - Usar usuarios, sesiones y grupos incluidos en Django.
 - Aplicar permisos en el servidor y no solamente ocultar botones en las plantillas.
 - Probar accesos directos a las rutas protegidas.
+- Consultar una fuente de sanciones por RUT normalizado y periodo de suspension.
 
 ## Correcciones Y Decisiones Personales
 
@@ -42,6 +44,8 @@ No se copiaron todas las sugerencias de forma automatica. Se realizaron estas co
 - No se duplico la cadena de `if/elif` de la regla. Crear y editar llaman a `decidir()` desde `solucion.py`.
 - El borrado fisico sugerido para un CRUD comun se reemplazo por borrado logico, de acuerdo con el modelo solicitado en el PDF.
 - La importacion desde `datos.json` se implemento como comando Django transaccional e idempotente para evitar duplicados.
+- Para las sanciones no se escribio ningun medico en el codigo. Se importo la base `suseso.sqlite3` al modelo `MedicoSancionado` y se comparan RUT y fechas mediante el ORM.
+- La comprobacion de sanciones se implemento como una capa posterior a `decidir()`, conservando los cuatro resultados originales cuando la licencia no esta sancionada.
 
 ## Verificacion Realizada
 
@@ -56,6 +60,7 @@ La suite de pruebas verifica:
 - Creacion, consulta, edicion y borrado logico.
 - CSRF en operaciones POST.
 - Reutilizacion de `decidir()` y sus cuatro resultados.
+- Rechazo de licencias cuando el medico esta sancionado durante la fecha de emision.
 
 La implementacion se verifico con:
 
@@ -64,3 +69,7 @@ python manage.py check
 python manage.py makemigrations --check --dry-run
 python manage.py test
 ```
+
+La implementacion de sanciones se verifico con datos importados desde `suseso.sqlite3`,
+incluyendo coincidencias con RUT escrito con puntos y guion, limites inclusivos del
+periodo de suspension y medicos sin sancion vigente.

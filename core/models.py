@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 
+from core.constants import ESTADO_RECHAZO_SANCION
 from solucion import (
     ESTADO_ACEPTADA,
     ESTADO_INVALIDO,
@@ -19,6 +20,7 @@ ESTADO_CHOICES = (
     (ESTADO_ACEPTADA, ESTADO_ACEPTADA),
     (ESTADO_RECHAZO_FECHA, ESTADO_RECHAZO_FECHA),
     (ESTADO_RECHAZO_DIAS, ESTADO_RECHAZO_DIAS),
+    (ESTADO_RECHAZO_SANCION, ESTADO_RECHAZO_SANCION),
     (ESTADO_INVALIDO, ESTADO_INVALIDO),
 )
 
@@ -52,3 +54,39 @@ class LicenciaMedica(models.Model):
         self.eliminado = True
         self.fecha_eliminacion = timezone.now()
         self.save(update_fields=("eliminado", "fecha_eliminacion"))
+
+
+class MedicoSancionado(models.Model):
+    rut_medico = models.CharField(max_length=20)
+    nombre_medico = models.CharField(max_length=240)
+    numero_oficio = models.CharField(max_length=80, blank=True)
+    fecha_oficio = models.DateField(null=True, blank=True)
+    monto_multa_utm = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+    suspension_dias = models.PositiveIntegerField(null=True, blank=True)
+    inicio_suspension = models.DateField(null=True, blank=True)
+    fin_suspension = models.DateField(null=True, blank=True)
+    fuente_url = models.URLField(max_length=500)
+    fecha_carga = models.DateTimeField(default=timezone.now, editable=False)
+    datos_origen = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ("-inicio_suspension", "nombre_medico")
+        constraints = (
+            models.UniqueConstraint(
+                fields=(
+                    "rut_medico",
+                    "numero_oficio",
+                    "inicio_suspension",
+                    "fin_suspension",
+                ),
+                name="unique_sancion_medico_periodo",
+            ),
+        )
+
+    def __str__(self):
+        return f"{self.nombre_medico} - {self.rut_medico}"
