@@ -1,7 +1,11 @@
+import sqlite3
 from datetime import date
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 
@@ -103,3 +107,61 @@ class SancionesTests(TestCase):
 
         self.assertNotEqual(estado, ESTADO_RECHAZO_SANCION)
         self.assertIsNone(sancion)
+
+
+class ImportarSancionesLimitTests(TestCase):
+    def test_importa_solo_el_limite_solicitado(self):
+        with TemporaryDirectory() as temporary_directory:
+            base = Path(temporary_directory) / "suseso.sqlite3"
+            connection = sqlite3.connect(base)
+            connection.execute(
+                """
+                CREATE TABLE records (
+                    run_profesional_emisor TEXT,
+                    nombres_profesional_emisor TEXT,
+                    apellidos_profesional_emisor TEXT,
+                    numero_oficio TEXT,
+                    fecha_oficio TEXT,
+                    monto_multa_utm TEXT,
+                    suspension_dias TEXT,
+                    inicio_de_la_suspension_de_emision_de_lm_inclusive TEXT,
+                    fin_de_la_suspension_de_emision_de_lm_inclusive TEXT,
+                    source_url TEXT
+                )
+                """
+            )
+            for rut, oficio in (
+                ("11.111.111-1", "OFICIO-UNO"),
+                ("22.222.222-2", "OFICIO-DOS"),
+                ("33.333.333-3", "OFICIO-TRES"),
+            ):
+                connection.execute(
+                    "INSERT INTO records VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        rut,
+                        "Nombre",
+                        "Apellido",
+                        oficio,
+                        "01/09/2026",
+                        "1000",
+                        "30",
+                        "01/09/2026",
+                        "30/09/2026",
+                        "https://example.com/sanciones",
+                    ),
+                )
+            connection.commit()
+            connection.close()
+
+            call_command(
+                "importar_sanciones",
+                path=str(base),
+                limit=2,
+                verbosity=0,
+            )
+
+        self.assertEqual(MedicoSancionado.objects.count(), 2)
+        self.assertEqual(
+            set(MedicoSancionado.objects.values_list("numero_oficio", flat=True)),
+            {"OFICIO-UNO", "OFICIO-DOS"},
+        )

@@ -26,8 +26,44 @@
                 <h2 id="titulo-registros">{{ ui.seccion_registros }}</h2>
                 <p>{{ ui.descripcion_registros }}</p>
             </div>
-            <a class="button-primary" href="{% url 'crear' %}">{{ ui.boton_crear }}</a>
-        </div>
+             <a class="button-primary" href="{% url 'crear' %}">{{ ui.boton_crear }}</a>
+         </div>
+
+        <form method="get" class="filter-panel" aria-label="Filtros de licencias">
+            <div class="filter-grid">
+                <div class="field">
+                    <label for="{{ filtro.q.id_for_label }}">{{ filtro.q.label }}</label>
+                    {{ filtro.q }}
+                </div>
+                <div class="field">
+                    <label for="{{ filtro.creado_por.id_for_label }}">{{ filtro.creado_por.label }}</label>
+                    {{ filtro.creado_por }}
+                </div>
+                <div class="field">
+                    <label for="{{ filtro.estado.id_for_label }}">{{ filtro.estado.label }}</label>
+                    {{ filtro.estado }}
+                </div>
+                <div class="field">
+                    <label for="{{ filtro.tipo_licencia.id_for_label }}">{{ filtro.tipo_licencia.label }}</label>
+                    {{ filtro.tipo_licencia }}
+                </div>
+                <div class="field">
+                    <label for="{{ filtro.fecha_desde.id_for_label }}">{{ filtro.fecha_desde.label }}</label>
+                    {{ filtro.fecha_desde }}
+                </div>
+                <div class="field">
+                    <label for="{{ filtro.fecha_hasta.id_for_label }}">{{ filtro.fecha_hasta.label }}</label>
+                    {{ filtro.fecha_hasta }}
+                </div>
+            </div>
+            {% if filtro.errors %}
+            <div class="field-errors" role="alert">Revise las fechas ingresadas.</div>
+            {% endif %}
+            <div class="filter-actions">
+                <button type="submit" class="button-primary">Aplicar filtros</button>
+                <a class="button-secondary" href="{% url 'lista' %}">Limpiar</a>
+            </div>
+        </form>
 
         {% if registros %}
         <div class="table-scroll table-scroll--records" tabindex="0" role="region" aria-label="{{ ui.tabla_etiqueta }}">
@@ -44,6 +80,7 @@
                         <th scope="col">{{ encabezados.fecha_emision }}</th>
                         <th scope="col">{{ encabezados.estado }}</th>
                         <th scope="col">{{ encabezados.motivo }}</th>
+                        <th scope="col">{{ encabezados.creado_por }}</th>
                         <th scope="col">{{ encabezados.acciones }}</th>
                     </tr>
                 </thead>
@@ -66,6 +103,7 @@
                             {% endif %}
                         </td>
                         <td data-label="{{ encabezados.motivo }}" class="cell-reason">{{ reg.motivo }}</td>
+                        <td data-label="{{ encabezados.creado_por }}">{{ reg.creado_por }}</td>
                         <td data-label="{{ encabezados.acciones }}" class="cell-actions">
                             <div class="record-actions">
                                 <a href="{% url 'editar' reg.id %}">{{ ui.accion_editar }}</a>

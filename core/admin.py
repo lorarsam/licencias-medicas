@@ -8,6 +8,7 @@ from .models import LicenciaMedica, MedicoSancionado
 class LicenciaMedicaAdmin(admin.ModelAdmin):
     list_display = (
         "id",
+        "creado_por",
         "funcionario",
         "rut_funcionario",
         "medico",
@@ -17,7 +18,13 @@ class LicenciaMedicaAdmin(admin.ModelAdmin):
         "fecha_emision",
         "eliminado",
     )
-    list_filter = ("estado", "tipo_licencia", "eliminado", "fecha_emision")
+    list_filter = (
+        "estado",
+        "tipo_licencia",
+        "creado_por",
+        "eliminado",
+        "fecha_emision",
+    )
     search_fields = (
         "medico",
         "rut_medico",

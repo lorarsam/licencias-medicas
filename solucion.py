@@ -92,6 +92,7 @@ ATRIBUTOS_FORMULARIO = {
         "class": CLASE_CONTROL_FORMULARIO,
         "placeholder": "12.345.678-5",
         "autocomplete": "off",
+        "data-rut": "true",
     },
     "nombre_funcionario": {
         "class": CLASE_CONTROL_FORMULARIO,
@@ -102,6 +103,7 @@ ATRIBUTOS_FORMULARIO = {
         "class": CLASE_CONTROL_FORMULARIO,
         "placeholder": "11.111.111-1",
         "autocomplete": "off",
+        "data-rut": "true",
     },
     "dias_reposo": {
         "class": CLASE_CONTROL_FORMULARIO,
@@ -152,6 +154,7 @@ TEXTOS_WEB = {
     "sin_registros_detalle": "Los registros procesados desde este formulario apareceran aqui.",
     "sin_registros_marca": "0",
     "tabla_etiqueta": "Listado de licencias medicas",
+    "usuario_creador": "Ingresada por",
     "pie": f"Persistencia local en {NOMBRE_ARCHIVO_JSON}",
 }
 
@@ -259,6 +262,30 @@ def convertir_entero(valor):
         return valor
 
 
+def normalizar_rut(rut):
+    if not isinstance(rut, str):
+        return ""
+    return rut.replace(".", "").replace("-", "").replace(" ", "").upper()
+
+
+def formatear_rut(rut):
+    rut_limpio = normalizar_rut(rut)
+    if len(rut_limpio) < 2:
+        return rut_limpio
+
+    cuerpo, digito_verificador = rut_limpio[:-1], rut_limpio[-1]
+    if not cuerpo.isdigit() or not (
+        digito_verificador.isdigit() or digito_verificador == DIGITO_RUT_K
+    ):
+        return rut_limpio
+
+    grupos = []
+    while cuerpo:
+        grupos.append(cuerpo[-3:])
+        cuerpo = cuerpo[:-3]
+    return ".".join(reversed(grupos)) + f"-{digito_verificador}"
+
+
 def obtener_motivo_invalido(nombre_medico, rut_medico, nombre_funcionario,
                             rut_funcionario, dias_reposo, fecha_emision,
                             tipo_licencia):
@@ -304,6 +331,8 @@ def decidir(nombre_medico, rut_medico, nombre_funcionario, rut_funcionario,
 
 def crear_registro(nombre_medico, rut_medico, nombre_funcionario, rut_funcionario,
                    dias_reposo, fecha_emision, tipo_licencia):
+    rut_medico = formatear_rut(rut_medico)
+    rut_funcionario = formatear_rut(rut_funcionario)
     estado, motivo = decidir(
         nombre_medico, rut_medico, nombre_funcionario, rut_funcionario,
         dias_reposo, fecha_emision, tipo_licencia,

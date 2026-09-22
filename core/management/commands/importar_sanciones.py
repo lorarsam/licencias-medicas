@@ -98,6 +98,12 @@ class Command(BaseCommand):
             default="suseso.sqlite3",
             help="Ruta de la base SQLite de sanciones.",
         )
+        parser.add_argument(
+            "--limit",
+            type=int,
+            default=None,
+            help="Cantidad maxima de registros a importar.",
+        )
 
     def handle(self, *args, **options):
         source_path = Path(options["path"])
@@ -117,6 +123,11 @@ class Command(BaseCommand):
         actualizados = 0
         try:
             rows = connection.execute("SELECT * FROM records").fetchall()
+            limit = options["limit"]
+            if limit is not None:
+                if limit <= 0:
+                    raise CommandError("El limite debe ser mayor que cero.")
+                rows = rows[:limit]
             with transaction.atomic():
                 for indice, row in enumerate(rows, start=1):
                     datos = convertir_fila(dict(row), indice)

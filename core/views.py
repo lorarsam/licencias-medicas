@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
@@ -10,7 +11,7 @@ from core.constants import (
     SITUACION_MEDICO_SANCIONADO,
 )
 from core.decorators import requiere_rol
-from core.forms import InicioSesionForm, LicenciaMedicaForm
+from core.forms import FiltroLicenciaForm, InicioSesionForm, LicenciaMedicaForm
 from core.models import LicenciaMedica
 from core.services import evaluar_licencia
 from solucion import (
@@ -23,6 +24,7 @@ from solucion import (
     ESTADO_RECHAZO_DIAS,
     ESTADO_RECHAZO_FECHA,
     FORMATO_FECHA,
+    formatear_rut,
     METODO_POST,
     RUTA_ESTILOS,
     TEXTOS_WEB,
@@ -72,6 +74,11 @@ def _fila_licencia(licencia):
             else SITUACION_MEDICO_HABILITADO
         ),
         "sancion": sancion,
+        "creado_por": (
+            licencia.creado_por.username
+            if licencia.creado_por
+            else "Sin usuario registrado"
+        ),
     }
 
 
@@ -148,14 +155,48 @@ def resumen(request):
 @login_required(login_url="login")
 @require_GET
 def lista(request):
-    registros = list(
-        LicenciaMedica.objects.filter(eliminado=False)
-    )
+    filtro = FiltroLicenciaForm(request.GET)
+    consulta = LicenciaMedica.objects.filter(eliminado=False)
+    if filtro.is_valid():
+        termino = filtro.cleaned_data["q"].strip()
+        if termino:
+            terminos = {termino, formatear_rut(termino)}
+            busqueda = Q()
+            for valor in terminos:
+                busqueda |= (
+                    Q(medico__icontains=valor)
+                    | Q(rut_medico__icontains=valor)
+                    | Q(funcionario__icontains=valor)
+                    | Q(rut_funcionario__icontains=valor)
+                    | Q(motivo__icontains=valor)
+                    | Q(creado_por__username__icontains=valor)
+                )
+            consulta = consulta.filter(busqueda)
+
+        if filtro.cleaned_data["estado"]:
+            consulta = consulta.filter(estado=filtro.cleaned_data["estado"])
+        if filtro.cleaned_data["tipo_licencia"]:
+            consulta = consulta.filter(
+                tipo_licencia=int(filtro.cleaned_data["tipo_licencia"])
+            )
+        if filtro.cleaned_data["creado_por"]:
+            consulta = consulta.filter(creado_por=filtro.cleaned_data["creado_por"])
+        if filtro.cleaned_data["fecha_desde"]:
+            consulta = consulta.filter(
+                fecha_emision__gte=filtro.cleaned_data["fecha_desde"]
+            )
+        if filtro.cleaned_data["fecha_hasta"]:
+            consulta = consulta.filter(
+                fecha_emision__lte=filtro.cleaned_data["fecha_hasta"]
+            )
+
+    registros = list(consulta.select_related("creado_por"))
     filas = [_fila_licencia(registro) for registro in registros]
     contexto = _contexto_base(
         encabezados=ENCABEZADOS_TABLA,
         metricas=_metricas(filas),
         registros=filas,
+        filtro=filtro,
     )
     return render(request, "lista.html", contexto)
 
@@ -166,6 +207,7 @@ def crear(request):
     formulario = LicenciaMedicaForm(request.POST or None)
     if request.method == METODO_POST and formulario.is_valid():
         licencia = formulario.save(commit=False)
+        licencia.creado_por = request.user
         estado, motivo, _ = evaluar_licencia(
             licencia.medico,
             licencia.rut_medico,

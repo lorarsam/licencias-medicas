@@ -124,6 +124,19 @@ class LicenciaMedicaFormTests(SimpleTestCase):
             date(2026, 1, 1),
         )
 
+    def test_normaliza_rut_sin_puntos_ni_guion(self):
+        formulario = LicenciaMedicaForm(
+            {
+                **DATOS_FORMULARIO_VALIDOS,
+                "rut_medico": "123456785",
+                "rut_funcionario": "111111111",
+            }
+        )
+
+        self.assertTrue(formulario.is_valid(), formulario.errors)
+        self.assertEqual(formulario.cleaned_data["rut_medico"], "12.345.678-5")
+        self.assertEqual(formulario.cleaned_data["rut_funcionario"], "11.111.111-1")
+
 
 class LicenciaCRUDViewTests(TestCase):
     def setUp(self):
@@ -193,6 +206,39 @@ class LicenciaCRUDViewTests(TestCase):
         self.assertRedirects(respuesta, self.url)
         licencia = LicenciaMedica.objects.get()
         self.assertEqual(licencia.estado, ESTADO_ACEPTADA)
+        self.assertEqual(licencia.creado_por, self.usuario)
+
+    def test_lista_filtra_por_usuario_creador_y_busqueda(self):
+        otro_usuario = get_user_model().objects.create_user(
+            username="otro_usuario",
+            password="test-password-123",
+        )
+        for usuario, medico in (
+            (self.usuario, "Ana Ejemplo"),
+            (otro_usuario, "Beatriz Ejemplo"),
+        ):
+            LicenciaMedica.objects.create(
+                medico=medico,
+                rut_medico="12.345.678-5",
+                funcionario="Luis Prueba",
+                rut_funcionario="11.111.111-1",
+                dias_reposo=7,
+                fecha_emision=date(2026, 1, 1),
+                tipo_licencia=1,
+                estado=ESTADO_ACEPTADA,
+                motivo="Licencia registrada correctamente",
+                creado_por=usuario,
+            )
+
+        respuesta = self.client.get(
+            self.url,
+            {"q": "Ana", "creado_por": str(self.usuario.pk)},
+        )
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, "Ana Ejemplo")
+        self.assertNotContains(respuesta, "Beatriz Ejemplo")
+        self.assertEqual(respuesta.context["metricas"][0]["valor"], 1)
 
     def test_post_invalido_no_guarda(self):
         datos = {**DATOS_FORMULARIO_VALIDOS, "dias_reposo": "texto"}

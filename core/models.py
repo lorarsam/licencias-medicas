@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
@@ -26,6 +27,13 @@ ESTADO_CHOICES = (
 
 
 class LicenciaMedica(models.Model):
+    creado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="licencias_creadas",
+    )
     medico = models.CharField(max_length=120)
     rut_medico = models.CharField(max_length=12)
     funcionario = models.CharField(max_length=120)

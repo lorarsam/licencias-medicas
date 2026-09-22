@@ -117,13 +117,33 @@ La regla `decidir()` no fue reescrita ni duplicada.
 |------|---------|
 | `/login/` | Inicio de sesion |
 | `/logout/` | Cierre de sesion mediante POST |
-| `/licencias/` | Listado de licencias activas |
+| `/licencias/` | Listado de licencias activas con filtros |
 | `/licencias/crear/` | Creacion |
 | `/licencias/<id>/editar/` | Actualizacion |
 | `/licencias/<id>/eliminar/` | Confirmacion y borrado logico |
 | `/admin/` | Administrador Django |
 
 `/resumen/` redirige al listado nuevo para conservar la ruta anterior.
+
+### Filtros Y Usuario Creador
+
+Cada licencia registra el usuario que la ingreso mediante `creado_por`. El
+listado filtra por busqueda de nombre o RUT, usuario creador, estado, tipo de
+licencia y rango de fechas de emision. Los filtros viajan por `GET` para que
+las metricas reflejen los resultados consultados.
+
+### RUT
+
+Los campos de RUT aceptan puntos, guion, sin formato y `k` minuscula. El
+backend normaliza y guarda el formato `12.345.678-5` y el frontend aplica el
+mismo formato al terminar de escribir. La validacion del RUT se mantiene en el
+servidor y no depende de JavaScript.
+
+### Respaldo De Licencias
+
+`exportar_licencias` genera un respaldo de licencias sin contrasenas ni
+sesiones; `importar_licencias` lo restaura vinculando el usuario creador si
+existe en el destino. El archivo generado queda excluido del repositorio.
 
 ### Roles Y Permisos
 
@@ -163,15 +183,18 @@ python manage.py crear_roles
 
 | Archivo | Responsabilidad |
 |---------|-----------------|
-| `core/models.py` | Modelo y borrado logico |
-| `core/forms.py` | Formularios de licencia y login |
-| `core/views.py` | Login, CRUD y reutilizacion de `decidir()` |
+| `core/models.py` | Modelo, usuario creador y borrado logico |
+| `core/forms.py` | Formularios de licencia, login y filtros |
+| `core/views.py` | Login, CRUD, filtros y reutilizacion de `decidir()` |
 | `core/services.py` | Verificacion de sanciones y evaluacion adicional |
 | `core/constants.py` | Estado de rechazo por sancion y situacion del medico |
 | `core/decorators.py` | Autorizacion por rol |
 | `core/admin.py` | Configuracion del administrador |
-| `core/management/commands/importar_sanciones.py` | Importacion de sanciones |
+| `core/management/commands/importar_sanciones.py` | Importacion de sanciones con `--limit` |
 | `core/management/commands/cargar_datos.py` | Migracion inicial desde JSON |
+| `core/management/commands/exportar_licencias.py` | Respaldo de licencias sin credenciales |
+| `core/management/commands/importar_licencias.py` | Restauracion de licencias |
 | `core/management/commands/crear_roles.py` | Creacion de grupos y permisos |
-| `miproyecto/settings.py` | SQLite, sesiones y autenticacion |
+| `core/static/core/js/rut.js` | Formateo automatico de RUT |
+| `miproyecto/settings.py` | SQLite, sesiones, autenticacion y hosts permitidos |
 | `miproyecto/urls.py` | Rutas del sistema |

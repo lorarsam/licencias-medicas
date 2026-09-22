@@ -6,7 +6,7 @@ __pycache__/
 venv/
 db.sqlite3
 suseso.sqlite3
-suseso.sqlite3
+licencias_respaldo.json
 *.egg-info/
 dist/
 build/

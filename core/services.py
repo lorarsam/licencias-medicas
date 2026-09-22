@@ -2,13 +2,7 @@ from datetime import date
 
 from core.constants import ESTADO_RECHAZO_SANCION
 from core.models import MedicoSancionado
-from solucion import ESTADO_ACEPTADA, decidir, parsear_fecha
-
-
-def normalizar_rut(rut):
-    if not isinstance(rut, str):
-        return ""
-    return rut.replace(".", "").replace("-", "").replace(" ", "").upper()
+from solucion import ESTADO_ACEPTADA, decidir, normalizar_rut, parsear_fecha
 
 
 def buscar_sancion_activa(rut_medico, fecha_emision):

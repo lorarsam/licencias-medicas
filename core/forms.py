@@ -1,7 +1,8 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth import get_user_model
 
-from core.models import LicenciaMedica
+from core.models import ESTADO_CHOICES, LicenciaMedica
 from solucion import (
     ATRIBUTOS_FORMULARIO,
     AYUDAS_FORMULARIO,
@@ -15,6 +16,7 @@ from solucion import (
     MENSAJE_OPCION_INVALIDA,
     OPCION_TIPO_INICIAL,
     TIPOS_LICENCIA,
+    formatear_rut,
 )
 
 
@@ -96,6 +98,73 @@ class LicenciaMedicaForm(forms.ModelForm):
             "fecha_emision",
             "tipo_licencia",
         )
+
+    def clean_rut_medico(self):
+        return formatear_rut(self.cleaned_data["rut_medico"])
+
+    def clean_rut_funcionario(self):
+        return formatear_rut(self.cleaned_data["rut_funcionario"])
+
+
+class FiltroLicenciaForm(forms.Form):
+    q = forms.CharField(
+        label="Buscar",
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "control",
+                "placeholder": "Nombre o RUT",
+                "autocomplete": "off",
+            }
+        ),
+    )
+    estado = forms.ChoiceField(
+        label="Estado",
+        required=False,
+        choices=(("", "Todos"), *ESTADO_CHOICES),
+        widget=forms.Select(attrs={"class": "control"}),
+    )
+    tipo_licencia = forms.ChoiceField(
+        label="Tipo de licencia",
+        required=False,
+        choices=(
+            ("", "Todos"),
+            *((codigo, f"{codigo} - {datos['nombre']}")
+              for codigo, datos in TIPOS_LICENCIA.items()),
+        ),
+        widget=forms.Select(attrs={"class": "control"}),
+    )
+    creado_por = forms.ModelChoiceField(
+        label="Ingresada por",
+        required=False,
+        queryset=get_user_model().objects.none(),
+        empty_label="Todos",
+        widget=forms.Select(attrs={"class": "control"}),
+    )
+    fecha_desde = forms.DateField(
+        label="Fecha desde",
+        required=False,
+        input_formats=(FORMATO_FECHA_HTML,),
+        widget=forms.DateInput(
+            format=FORMATO_FECHA_HTML,
+            attrs={"class": "control", "type": "date"},
+        ),
+    )
+    fecha_hasta = forms.DateField(
+        label="Fecha hasta",
+        required=False,
+        input_formats=(FORMATO_FECHA_HTML,),
+        widget=forms.DateInput(
+            format=FORMATO_FECHA_HTML,
+            attrs={"class": "control", "type": "date"},
+        ),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["creado_por"].queryset = get_user_model().objects.filter(
+            is_active=True,
+        ).order_by("username")
 
 
 class InicioSesionForm(AuthenticationForm):
