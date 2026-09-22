@@ -29,8 +29,9 @@ creacion, edicion y eliminacion de licencias para el usuario demo.
 
 ## Sanciones de SUSESO
 
-`suseso.sqlite3` se entrega por separado y no se incluye en el repositorio.
-Importa las sanciones con:
+`suseso.sqlite3` contiene un snapshot publico de sanciones obtenido mediante
+scraping de la pagina oficial de SUSESO y se incluye en el repositorio. Importa
+las sanciones con:
 
 ```powershell
 python manage.py importar_sanciones --path suseso.sqlite3
@@ -44,7 +45,9 @@ python manage.py importar_sanciones --path suseso.sqlite3 --limit 10
 
 La importacion carga o actualiza `MedicoSancionado` sin eliminar las licencias
 existentes. Si el medico tiene una suspension vigente en la fecha de emision, la
-licencia se rechaza con el estado `Rechazo - medico sancionado`.
+licencia se rechaza con el estado `Rechazo - medico sancionado`. El snapshot
+puede actualizarse re-ejecutando el importador con una version mas reciente de
+la base.
 
 ## Respaldo y restauracion de licencias
 
