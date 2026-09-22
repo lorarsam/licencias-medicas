@@ -30,8 +30,12 @@ creacion, edicion y eliminacion de licencias para el usuario demo.
 ## Sanciones de SUSESO
 
 `suseso.sqlite3` contiene un snapshot publico de sanciones obtenido mediante
-scraping de la pagina oficial de SUSESO y se incluye en el repositorio. Importa
-las sanciones con:
+scraping de la pagina oficial de SUSESO y se incluye en el repositorio. La
+fuente publica es:
+
+https://www.suseso.gob.cl/609/w3-propertyvalue-799701.html
+
+Importa las sanciones con:
 
 ```powershell
 python manage.py importar_sanciones --path suseso.sqlite3
